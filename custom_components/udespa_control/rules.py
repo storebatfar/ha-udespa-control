@@ -7,10 +7,11 @@ up in "Seneste handling".
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass
-from datetime import timedelta
+from datetime import datetime, timedelta
 
-from .const import SPA_CALLING, BackupKind, HeatAction, Status, Trigger
+from .const import SPA_CALLING, BackupKind, HeatAction, Mode, Status, Trigger
 
 
 @dataclass(frozen=True)
@@ -224,3 +225,90 @@ HEAD_START_OFF_FAILED_ALERT: tuple[str, str] = (
     ("Hurtigstart: spaen kaldte ikke på varme, men varmepumpen kunne ikke slukkes "
     "igen og trækker strøm på L3."),
 )
+FOLLOWS_SETPOINT: frozenset[Status] = frozenset({Status.IN_USE, Status.MAINTAINING})
+
+
+def desired_status(
+    setpoint: float | None, rest: float | None, threshold: float
+) -> Status | None:
+    """B10: I brug when setpoint - rest > threshold. None keeps the current status."""
+    if setpoint is None or rest is None:
+        return None
+    # Rounded so 37.3 - 37.0 = 0.2999... cannot fall the wrong side of 0.25.
+    if round(setpoint - rest, 3) > threshold:
+        return Status.IN_USE
+    return Status.MAINTAINING
+
+
+def resolve_status(
+    current: Status,
+    *,
+    failure_open: bool,
+    fault_status_enabled: bool,
+    from_setpoint: Status | None,
+) -> Status:
+    """The status right now, without the B10 delay (B11 and restores)."""
+    if current is Status.CLEANING:
+        return current
+    if failure_open and fault_status_enabled:
+        return Status.FAULT
+    if from_setpoint is not None:
+        return from_setpoint
+    if current is Status.FAULT:
+        # Failure gone and no setpoint to read: never leave "Fejl" stuck.
+        return Status.MAINTAINING
+    return current
+
+
+_MODE_FOR_STATUS: dict[Status, Mode] = {
+    Status.MAINTAINING: Mode.QUIET,
+    Status.IN_USE: Mode.SMART,
+}
+
+
+def mode_for_status(status: Status) -> Mode | None:
+    """B12: Fejl and Rengøring leave the mode alone."""
+    return _MODE_FOR_STATUS.get(status)
+
+
+def mode_for_preset(preset: str | None, presets: Mapping[Mode, str]) -> Mode | None:
+    for mode, value in presets.items():
+        if value == preset:
+            return mode
+    return None
+
+
+def nudged_setpoint(
+    setpoint: float | None, delta: float, min_temp: float, max_temp: float
+) -> float | None:
+    """B13. None when there is nothing to send."""
+    if setpoint is None:
+        return None
+    target = min(max(setpoint + delta, min_temp), max_temp)
+    if target == setpoint:
+        return None
+    return target
+
+
+def frost_action(old: float | None, new: float | None, limit: float) -> bool | None:
+    """C14, at crossings only. An unknown old value counts as not matching."""
+    if new is None:
+        return None
+    if new < limit and not (old is not None and old < limit):
+        return True
+    if new > limit and not (old is not None and old > limit):
+        return False
+    return None
+
+
+def whole_days_since(reset_at: datetime, now: datetime) -> int:
+    return max(0, (now - reset_at) // timedelta(days=1))
+
+
+def restorable_status(saved: str | None) -> Status | None:
+    """A saved status worth restoring after cleaning: valid and not Rengøring."""
+    try:
+        status = Status(saved)
+    except ValueError:
+        return None
+    return None if status is Status.CLEANING else status
