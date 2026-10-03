@@ -264,6 +264,9 @@
     "number": {
       "rest_temperature": {
         "name": "Rest temperature"
+      },
+      "heat_pump_offset": {
+        "name": "Heat pump offset"
       }
     },
     "button": {
@@ -312,11 +315,83 @@
       },
       "last_action": {
         "name": "Last action"
+      },
+      "temperature_sync": {
+        "name": "Temperature sync"
+      },
+      "water_temperature": {
+        "name": "Water temperature"
+      },
+      "setpoint": {
+        "name": "Setpoint"
+      },
+      "heat_demand": {
+        "name": "Heat demand"
+      },
+      "hp_inlet": {
+        "name": "Heat pump inlet"
+      },
+      "hp_outlet": {
+        "name": "Heat pump outlet"
+      },
+      "hp_temperature_rise": {
+        "name": "Heat pump temperature rise"
+      },
+      "hp_compressor": {
+        "name": "Heat pump compressor"
+      },
+      "hp_power": {
+        "name": "Heat pump power"
+      },
+      "hp_ambient": {
+        "name": "Heat pump ambient"
+      },
+      "heater_power": {
+        "name": "Heater power"
+      },
+      "circulation_power": {
+        "name": "Circulation power"
+      },
+      "hp_coil": {
+        "name": "Heat pump coil"
+      },
+      "hp_exhaust": {
+        "name": "Heat pump exhaust"
+      },
+      "hp_ipm": {
+        "name": "Heat pump IPM"
+      },
+      "hp_fan": {
+        "name": "Heat pump fan"
+      },
+      "hp_eev": {
+        "name": "Heat pump EEV"
+      },
+      "hp_compressor_current": {
+        "name": "Heat pump compressor current"
+      },
+      "water_ph": {
+        "name": "Water pH"
+      },
+      "water_orp": {
+        "name": "Water ORP"
+      },
+      "water_tds": {
+        "name": "Water TDS"
+      },
+      "ondilo_temperature": {
+        "name": "Ondilo temperature"
+      },
+      "ondilo_battery": {
+        "name": "Ondilo battery"
       }
     },
     "binary_sensor": {
       "heat_pump_failure": {
         "name": "Heat pump failure"
+      },
+      "circulation": {
+        "name": "Circulation"
       }
     }
   }

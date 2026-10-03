@@ -309,7 +309,10 @@ ABORTS: dict[str, tuple[str, str]] = {
 
 ENTITY_NAMES: dict[str, dict[str, tuple[str, str]]] = {
     "select": {"heat_pump_mode": ("Heat pump mode", "Varmepumpe tilstand")},
-    "number": {"rest_temperature": ("Rest temperature", "Hviletemperatur")},
+    "number": {
+        "rest_temperature": ("Rest temperature", "Hviletemperatur"),
+        "heat_pump_offset": ("Heat pump offset", "Varmepumpe offset"),
+    },
     "button": {
         "raise_temperature": ("Raise temperature", "Hæv temperatur"),
         "lower_temperature": ("Lower temperature", "Sænk temperatur"),
@@ -329,8 +332,34 @@ ENTITY_NAMES: dict[str, dict[str, tuple[str, str]]] = {
         "bath_water_timer": ("Bath water timer", "Badevand timer"),
         "heating": ("Heating", "Varmer"),
         "last_action": ("Last action", "Seneste handling"),
+        "temperature_sync": ("Temperature sync", "Temperatursynk"),
+        "water_temperature": ("Water temperature", "Vandtemperatur"),
+        "setpoint": ("Setpoint", "Setpunkt"),
+        "heat_demand": ("Heat demand", "Varmebehov"),
+        "hp_inlet": ("Heat pump inlet", "Varmepumpe indløb"),
+        "hp_outlet": ("Heat pump outlet", "Varmepumpe udløb"),
+        "hp_temperature_rise": ("Heat pump temperature rise", "Varmepumpe temperaturstigning"),
+        "hp_compressor": ("Heat pump compressor", "Varmepumpe kompressor"),
+        "hp_power": ("Heat pump power", "Varmepumpe effekt"),
+        "hp_ambient": ("Heat pump ambient", "Varmepumpe omgivelse"),
+        "heater_power": ("Heater power", "Varmelegeme effekt"),
+        "circulation_power": ("Circulation power", "Cirkulation effekt"),
+        "hp_coil": ("Heat pump coil", "Varmepumpe spole"),
+        "hp_exhaust": ("Heat pump exhaust", "Varmepumpe afgang"),
+        "hp_ipm": ("Heat pump IPM", "Varmepumpe IPM"),
+        "hp_fan": ("Heat pump fan", "Varmepumpe blæser"),
+        "hp_eev": ("Heat pump EEV", "Varmepumpe EEV"),
+        "hp_compressor_current": ("Heat pump compressor current", "Varmepumpe kompressorstrøm"),
+        "water_ph": ("Water pH", "Vand pH"),
+        "water_orp": ("Water ORP", "Vand ORP"),
+        "water_tds": ("Water TDS", "Vand TDS"),
+        "ondilo_temperature": ("Ondilo temperature", "Ondilo temperatur"),
+        "ondilo_battery": ("Ondilo battery", "Ondilo batteri"),
     },
-    "binary_sensor": {"heat_pump_failure": ("Heat pump failure", "Varmepumpe fejl")},
+    "binary_sensor": {
+        "heat_pump_failure": ("Heat pump failure", "Varmepumpe fejl"),
+        "circulation": ("Circulation", "Cirkulation"),
+    },
 }
 
 

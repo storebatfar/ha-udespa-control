@@ -264,6 +264,9 @@
     "number": {
       "rest_temperature": {
         "name": "Hviletemperatur"
+      },
+      "heat_pump_offset": {
+        "name": "Varmepumpe offset"
       }
     },
     "button": {
@@ -312,11 +315,83 @@
       },
       "last_action": {
         "name": "Seneste handling"
+      },
+      "temperature_sync": {
+        "name": "Temperatursynk"
+      },
+      "water_temperature": {
+        "name": "Vandtemperatur"
+      },
+      "setpoint": {
+        "name": "Setpunkt"
+      },
+      "heat_demand": {
+        "name": "Varmebehov"
+      },
+      "hp_inlet": {
+        "name": "Varmepumpe indløb"
+      },
+      "hp_outlet": {
+        "name": "Varmepumpe udløb"
+      },
+      "hp_temperature_rise": {
+        "name": "Varmepumpe temperaturstigning"
+      },
+      "hp_compressor": {
+        "name": "Varmepumpe kompressor"
+      },
+      "hp_power": {
+        "name": "Varmepumpe effekt"
+      },
+      "hp_ambient": {
+        "name": "Varmepumpe omgivelse"
+      },
+      "heater_power": {
+        "name": "Varmelegeme effekt"
+      },
+      "circulation_power": {
+        "name": "Cirkulation effekt"
+      },
+      "hp_coil": {
+        "name": "Varmepumpe spole"
+      },
+      "hp_exhaust": {
+        "name": "Varmepumpe afgang"
+      },
+      "hp_ipm": {
+        "name": "Varmepumpe IPM"
+      },
+      "hp_fan": {
+        "name": "Varmepumpe blæser"
+      },
+      "hp_eev": {
+        "name": "Varmepumpe EEV"
+      },
+      "hp_compressor_current": {
+        "name": "Varmepumpe kompressorstrøm"
+      },
+      "water_ph": {
+        "name": "Vand pH"
+      },
+      "water_orp": {
+        "name": "Vand ORP"
+      },
+      "water_tds": {
+        "name": "Vand TDS"
+      },
+      "ondilo_temperature": {
+        "name": "Ondilo temperatur"
+      },
+      "ondilo_battery": {
+        "name": "Ondilo batteri"
       }
     },
     "binary_sensor": {
       "heat_pump_failure": {
         "name": "Varmepumpe fejl"
+      },
+      "circulation": {
+        "name": "Cirkulation"
       }
     }
   }
