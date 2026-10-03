@@ -1,0 +1,323 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Udespa Control",
+        "description": "Vælg enhederne og tjek tallene. Aktiv styring starter slået fra, så integrationen kun overvåger, indtil du slår den til.",
+        "sections": {
+          "entities": {
+            "name": "Entiteter",
+            "description": "Enhederne, Udespa Control arbejder igennem. Den taler aldrig direkte med hardware.",
+            "data": {
+              "spa": "Spa",
+              "circulation": "Cirkulationspumpe",
+              "filter_cycle_1": "Filtercyklus 1",
+              "filter_cycle_2": "Filtercyklus 2",
+              "heat_pump": "Varmepumpe",
+              "heat_pump_power": "Varmepumpe strøm",
+              "heater": "Varmelegeme",
+              "heater_power": "Varmelegeme strøm",
+              "outdoor": "Udetemperatur",
+              "outdoor_attribute": "Attribut for udetemperatur",
+              "cleaning_pump": "Rengøringspumpe",
+              "notify": "Notifikationstjeneste"
+            },
+            "data_description": {
+              "spa": "Spaens climate-entitet. Dens aktuelle temperatur og setpunkt styrer alle regler.",
+              "circulation": "Tændt mens spaen cirkulerer vandet. Varmepumpen må kun køre, mens den er tændt.",
+              "filter_cycle_1": "Valgfri. Bruges kun til at navngive cyklussen i Seneste handling.",
+              "filter_cycle_2": "Valgfri. Bruges kun til at navngive cyklussen i Seneste handling.",
+              "heat_pump": "Varmepumpens climate-entitet. Dens egen tilstand stoles aldrig på; strømmen bekræfter den.",
+              "heat_pump_power": "Effekt på den målerfase, der kun bærer varmepumpen.",
+              "heater": "Kontakten til varmelegemet, brugt til frostsikring og som backup.",
+              "heater_power": "Effekt på den målerfase, der kun bærer varmelegemet.",
+              "outdoor": "Entitet med udetemperaturen, i sin tilstand eller i attributten nedenfor.",
+              "outdoor_attribute": "Lad feltet stå tomt for at bruge entitetens tilstand.",
+              "cleaning_pump": "Pumpen, der kører rørrengøringens cyklusser.",
+              "notify": "For eksempel notify.mobile_app_thomas_iphone_15."
+            }
+          },
+          "numbers": {
+            "name": "Tal",
+            "description": "Tider, grænser og presets. Standardværdierne er de målte værdier fra i dag.",
+            "data": {
+              "off_delay_s": "Sluk-forsinkelse efter varmekald",
+              "head_start_timeout_s": "Hurtigstart timeout",
+              "heat_pump_on_w": "Varmepumpe kører over",
+              "heat_pump_off_w": "Varmepumpe stoppet under",
+              "retry_minutes": "Retry-vindue",
+              "backup_margin_c": "Backup: margin under setpunkt",
+              "backup_check_s": "Backup: måling af varmelegeme efter",
+              "heater_on_w": "Varmelegeme kører over",
+              "watchdog_interval_min": "Vagthund: interval",
+              "watchdog_circulation_min": "Vagthund: cirkulation mindst",
+              "frost_limit_c": "Frostgrænse",
+              "in_use_threshold_c": "I brug-grænse over hviletemperatur",
+              "cleaning_max_min": "Rengøring: max pr. cyklus",
+              "cleaning_estimate_min": "Rengøring: visnings-estimat",
+              "preset_quiet": "Preset for Lydløs",
+              "preset_smart": "Preset for Smart",
+              "preset_turbo": "Preset for Turbo"
+            },
+            "data_description": {
+              "off_delay_s": "Hvor længe spaen skal melde off, før varmepumpen slukkes.",
+              "head_start_timeout_s": "Hurtigstart slukker varmepumpen igen, hvis der ikke kommer et varmekald inden for denne tid. Hold den under kompressorens start (85–96 s).",
+              "heat_pump_on_w": "Effekt, der bekræfter, at varmepumpen kører.",
+              "heat_pump_off_w": "Effekt, der bekræfter, at varmepumpen er stoppet. Skal være lavere end kører-grænsen.",
+              "retry_minutes": "Hvor længe et tænd eller sluk forsøges og verificeres, før det regnes som fejlet.",
+              "backup_margin_c": "Backup-varmelegemet træder kun til, når vandet er så langt under setpunktet.",
+              "backup_check_s": "Hvor længe efter varmelegemet tændes, dets effekt måles til notifikationen.",
+              "heater_on_w": "Effekt, der bekræfter, at varmelegemet varmer.",
+              "watchdog_interval_min": "Hvor tit vagthunden tjekker varmepumpen.",
+              "watchdog_circulation_min": "Vagthunden handler først, når cirkulationen har kørt så længe.",
+              "frost_limit_c": "Frostsikringen tænder varmelegemet under denne udetemperatur og slukker det over.",
+              "in_use_threshold_c": "Status er I brug, når setpunktet ligger mere end dette over hviletemperaturen.",
+              "cleaning_max_min": "Sikkerhedsgrænse, hvis spaen ikke selv stopper rengøringspumpen (normalt efter 15 min).",
+              "cleaning_estimate_min": "Vises på dashboards som forventet cyklus-længde.",
+              "preset_quiet": "Varmepumpens preset for tilstanden Lydløs.",
+              "preset_smart": "Varmepumpens preset for tilstanden Smart.",
+              "preset_turbo": "Varmepumpens preset for tilstanden Turbo."
+            }
+          },
+          "toggles": {
+            "name": "Til/fra",
+            "description": "Slå enkelte regler til eller fra.",
+            "data": {
+              "head_start": "Hurtigstart i I brug",
+              "backup_heater": "Backup-varmelegeme ved fejl",
+              "watchdog": "Vagthund",
+              "notifications": "Notifikationer",
+              "fault_status": "Status Fejl ved varmepumpefejl"
+            },
+            "data_description": {
+              "head_start": "Tænd varmepumpen, når cirkulationen starter i I brug, før spaen kalder på varme.",
+              "backup_heater": "Tænd varmelegemet, når varmepumpen fejler, og vandet er koldt.",
+              "watchdog": "Tjek jævnligt, at varmepumpen kører, mens vandet er koldt.",
+              "notifications": "Send advarsler til notifikationstjenesten.",
+              "fault_status": "Vis Fejl som status, mens en varmepumpefejl er åben."
+            }
+          }
+        }
+      },
+      "reconfigure": {
+        "title": "Skift enheder",
+        "description": "Skift enheder uden at miste entitets-id'er eller gemt tilstand.",
+        "sections": {
+          "entities": {
+            "name": "Entiteter",
+            "description": "Enhederne, Udespa Control arbejder igennem. Den taler aldrig direkte med hardware.",
+            "data": {
+              "spa": "Spa",
+              "circulation": "Cirkulationspumpe",
+              "filter_cycle_1": "Filtercyklus 1",
+              "filter_cycle_2": "Filtercyklus 2",
+              "heat_pump": "Varmepumpe",
+              "heat_pump_power": "Varmepumpe strøm",
+              "heater": "Varmelegeme",
+              "heater_power": "Varmelegeme strøm",
+              "outdoor": "Udetemperatur",
+              "outdoor_attribute": "Attribut for udetemperatur",
+              "cleaning_pump": "Rengøringspumpe",
+              "notify": "Notifikationstjeneste"
+            },
+            "data_description": {
+              "spa": "Spaens climate-entitet. Dens aktuelle temperatur og setpunkt styrer alle regler.",
+              "circulation": "Tændt mens spaen cirkulerer vandet. Varmepumpen må kun køre, mens den er tændt.",
+              "filter_cycle_1": "Valgfri. Bruges kun til at navngive cyklussen i Seneste handling.",
+              "filter_cycle_2": "Valgfri. Bruges kun til at navngive cyklussen i Seneste handling.",
+              "heat_pump": "Varmepumpens climate-entitet. Dens egen tilstand stoles aldrig på; strømmen bekræfter den.",
+              "heat_pump_power": "Effekt på den målerfase, der kun bærer varmepumpen.",
+              "heater": "Kontakten til varmelegemet, brugt til frostsikring og som backup.",
+              "heater_power": "Effekt på den målerfase, der kun bærer varmelegemet.",
+              "outdoor": "Entitet med udetemperaturen, i sin tilstand eller i attributten nedenfor.",
+              "outdoor_attribute": "Lad feltet stå tomt for at bruge entitetens tilstand.",
+              "cleaning_pump": "Pumpen, der kører rørrengøringens cyklusser.",
+              "notify": "For eksempel notify.mobile_app_thomas_iphone_15."
+            }
+          }
+        }
+      }
+    },
+    "error": {
+      "notify_not_found": "Den notifikationstjeneste findes ikke.",
+      "power_thresholds": "Varmepumpe stoppet under skal være lavere end varmepumpe kører over.",
+      "unknown_preset": "En preset er ikke en af varmepumpens presets."
+    },
+    "abort": {
+      "already_configured": "Denne spa er allerede sat op.",
+      "reconfigure_successful": "Enhederne er skiftet."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Udespa Control indstillinger",
+        "description": "Alle indstillinger på én skærm. Gem genindlæser integrationen.",
+        "sections": {
+          "entities": {
+            "name": "Entiteter",
+            "description": "Enhederne, Udespa Control arbejder igennem. Den taler aldrig direkte med hardware.",
+            "data": {
+              "spa": "Spa",
+              "circulation": "Cirkulationspumpe",
+              "filter_cycle_1": "Filtercyklus 1",
+              "filter_cycle_2": "Filtercyklus 2",
+              "heat_pump": "Varmepumpe",
+              "heat_pump_power": "Varmepumpe strøm",
+              "heater": "Varmelegeme",
+              "heater_power": "Varmelegeme strøm",
+              "outdoor": "Udetemperatur",
+              "outdoor_attribute": "Attribut for udetemperatur",
+              "cleaning_pump": "Rengøringspumpe",
+              "notify": "Notifikationstjeneste"
+            },
+            "data_description": {
+              "spa": "Spaens climate-entitet. Dens aktuelle temperatur og setpunkt styrer alle regler.",
+              "circulation": "Tændt mens spaen cirkulerer vandet. Varmepumpen må kun køre, mens den er tændt.",
+              "filter_cycle_1": "Valgfri. Bruges kun til at navngive cyklussen i Seneste handling.",
+              "filter_cycle_2": "Valgfri. Bruges kun til at navngive cyklussen i Seneste handling.",
+              "heat_pump": "Varmepumpens climate-entitet. Dens egen tilstand stoles aldrig på; strømmen bekræfter den.",
+              "heat_pump_power": "Effekt på den målerfase, der kun bærer varmepumpen.",
+              "heater": "Kontakten til varmelegemet, brugt til frostsikring og som backup.",
+              "heater_power": "Effekt på den målerfase, der kun bærer varmelegemet.",
+              "outdoor": "Entitet med udetemperaturen, i sin tilstand eller i attributten nedenfor.",
+              "outdoor_attribute": "Lad feltet stå tomt for at bruge entitetens tilstand.",
+              "cleaning_pump": "Pumpen, der kører rørrengøringens cyklusser.",
+              "notify": "For eksempel notify.mobile_app_thomas_iphone_15."
+            }
+          },
+          "numbers": {
+            "name": "Tal",
+            "description": "Tider, grænser og presets. Standardværdierne er de målte værdier fra i dag.",
+            "data": {
+              "off_delay_s": "Sluk-forsinkelse efter varmekald",
+              "head_start_timeout_s": "Hurtigstart timeout",
+              "heat_pump_on_w": "Varmepumpe kører over",
+              "heat_pump_off_w": "Varmepumpe stoppet under",
+              "retry_minutes": "Retry-vindue",
+              "backup_margin_c": "Backup: margin under setpunkt",
+              "backup_check_s": "Backup: måling af varmelegeme efter",
+              "heater_on_w": "Varmelegeme kører over",
+              "watchdog_interval_min": "Vagthund: interval",
+              "watchdog_circulation_min": "Vagthund: cirkulation mindst",
+              "frost_limit_c": "Frostgrænse",
+              "in_use_threshold_c": "I brug-grænse over hviletemperatur",
+              "cleaning_max_min": "Rengøring: max pr. cyklus",
+              "cleaning_estimate_min": "Rengøring: visnings-estimat",
+              "preset_quiet": "Preset for Lydløs",
+              "preset_smart": "Preset for Smart",
+              "preset_turbo": "Preset for Turbo"
+            },
+            "data_description": {
+              "off_delay_s": "Hvor længe spaen skal melde off, før varmepumpen slukkes.",
+              "head_start_timeout_s": "Hurtigstart slukker varmepumpen igen, hvis der ikke kommer et varmekald inden for denne tid. Hold den under kompressorens start (85–96 s).",
+              "heat_pump_on_w": "Effekt, der bekræfter, at varmepumpen kører.",
+              "heat_pump_off_w": "Effekt, der bekræfter, at varmepumpen er stoppet. Skal være lavere end kører-grænsen.",
+              "retry_minutes": "Hvor længe et tænd eller sluk forsøges og verificeres, før det regnes som fejlet.",
+              "backup_margin_c": "Backup-varmelegemet træder kun til, når vandet er så langt under setpunktet.",
+              "backup_check_s": "Hvor længe efter varmelegemet tændes, dets effekt måles til notifikationen.",
+              "heater_on_w": "Effekt, der bekræfter, at varmelegemet varmer.",
+              "watchdog_interval_min": "Hvor tit vagthunden tjekker varmepumpen.",
+              "watchdog_circulation_min": "Vagthunden handler først, når cirkulationen har kørt så længe.",
+              "frost_limit_c": "Frostsikringen tænder varmelegemet under denne udetemperatur og slukker det over.",
+              "in_use_threshold_c": "Status er I brug, når setpunktet ligger mere end dette over hviletemperaturen.",
+              "cleaning_max_min": "Sikkerhedsgrænse, hvis spaen ikke selv stopper rengøringspumpen (normalt efter 15 min).",
+              "cleaning_estimate_min": "Vises på dashboards som forventet cyklus-længde.",
+              "preset_quiet": "Varmepumpens preset for tilstanden Lydløs.",
+              "preset_smart": "Varmepumpens preset for tilstanden Smart.",
+              "preset_turbo": "Varmepumpens preset for tilstanden Turbo."
+            }
+          },
+          "toggles": {
+            "name": "Til/fra",
+            "description": "Slå enkelte regler til eller fra.",
+            "data": {
+              "head_start": "Hurtigstart i I brug",
+              "backup_heater": "Backup-varmelegeme ved fejl",
+              "watchdog": "Vagthund",
+              "notifications": "Notifikationer",
+              "fault_status": "Status Fejl ved varmepumpefejl"
+            },
+            "data_description": {
+              "head_start": "Tænd varmepumpen, når cirkulationen starter i I brug, før spaen kalder på varme.",
+              "backup_heater": "Tænd varmelegemet, når varmepumpen fejler, og vandet er koldt.",
+              "watchdog": "Tjek jævnligt, at varmepumpen kører, mens vandet er koldt.",
+              "notifications": "Send advarsler til notifikationstjenesten.",
+              "fault_status": "Vis Fejl som status, mens en varmepumpefejl er åben."
+            }
+          }
+        }
+      }
+    },
+    "error": {
+      "notify_not_found": "Den notifikationstjeneste findes ikke.",
+      "power_thresholds": "Varmepumpe stoppet under skal være lavere end varmepumpe kører over.",
+      "unknown_preset": "En preset er ikke en af varmepumpens presets."
+    }
+  },
+  "entity": {
+    "select": {
+      "heat_pump_mode": {
+        "name": "Varmepumpe tilstand"
+      }
+    },
+    "number": {
+      "rest_temperature": {
+        "name": "Hviletemperatur"
+      }
+    },
+    "button": {
+      "raise_temperature": {
+        "name": "Hæv temperatur"
+      },
+      "lower_temperature": {
+        "name": "Sænk temperatur"
+      },
+      "start_cleaning": {
+        "name": "Start rengøring"
+      },
+      "stop_cleaning": {
+        "name": "Stop rengøring"
+      },
+      "reset_filter_timer": {
+        "name": "Nulstil filter timer"
+      },
+      "reset_bath_water_timer": {
+        "name": "Nulstil badevand timer"
+      }
+    },
+    "switch": {
+      "frost_protection": {
+        "name": "Frostsikring"
+      },
+      "active_control": {
+        "name": "Aktiv styring"
+      }
+    },
+    "sensor": {
+      "status": {
+        "name": "Status"
+      },
+      "cleaning_phase": {
+        "name": "Rengøringsfase"
+      },
+      "filter_timer": {
+        "name": "Filter timer"
+      },
+      "bath_water_timer": {
+        "name": "Badevand timer"
+      },
+      "heating": {
+        "name": "Varmer"
+      },
+      "last_action": {
+        "name": "Seneste handling"
+      }
+    },
+    "binary_sensor": {
+      "heat_pump_failure": {
+        "name": "Varmepumpe fejl"
+      }
+    }
+  }
+}
