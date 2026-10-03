@@ -137,7 +137,9 @@ async def test_copy_follows_a_unit_change(hass: HomeAssistant, tub: FakeTub, ent
     assert power.state == "1235"
 
 
-async def test_temperature_rise(hass: HomeAssistant, entry):
+async def test_temperature_rise(hass: HomeAssistant, tub: FakeTub, entry):
+    tub.circulation(True)
+    await settle(hass)
     rise = state(hass, entry, "sensor", "hp_temperature_rise")
     assert float(rise.state) == 3.4  # 38.4 out - 35.0 in
     hass.states.async_set("sensor.src_outlet", "unavailable")
@@ -209,3 +211,20 @@ async def test_an_emptied_source_removes_its_copy(hass: HomeAssistant, entry):
     assert await hass.config_entries.async_reload(entry.entry_id)
     await settle(hass)
     assert eid(hass, entry, "sensor", "water_ph") is None
+
+
+async def test_temperature_rise_only_while_water_flows(hass: HomeAssistant, tub: FakeTub, entry):
+    """With circulation off the inlet sensor reads standing water: no meaningful rise."""
+    assert state(hass, entry, "sensor", "hp_temperature_rise").state == "unavailable"
+    tub.circulation(True)
+    await settle(hass)
+    assert float(state(hass, entry, "sensor", "hp_temperature_rise").state) == 3.4
+    tub.circulation(False)
+    await settle(hass)
+    assert state(hass, entry, "sensor", "hp_temperature_rise").state == "unavailable"
+
+
+async def test_whole_numbers_stay_whole(hass: HomeAssistant, entry):
+    assert state(hass, entry, "sensor", "ondilo_battery").state == "63"
+    assert state(hass, entry, "sensor", "hp_eev").state == "350"
+    assert state(hass, entry, "sensor", "water_ph").state == "7.4"
