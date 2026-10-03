@@ -34,10 +34,12 @@ from homeassistant.helpers.start import async_at_started
 from homeassistant.util import dt as dt_util
 
 from .actuators import Actuators
+from .cleaning import Cleaning
 from .const import (
     DOMAIN,
     LAST_ACTION_MAX,
     STATUS_DELAY_S,
+    CleaningPhase,
     Mode,
     Status,
     Timer,
@@ -99,6 +101,7 @@ class UdespaController:
         self._pending_status: Status | None = None
         self._timer_days: tuple[int | None, int | None] = (None, None)
         self._shut_down = False
+        self.cleaning = Cleaning(self)
 
     # --- lifecycle ----------------------------------------------------------
 
@@ -132,7 +135,8 @@ class UdespaController:
         self._unsubs.append(async_at_started(self.hass, self._async_started))
 
     async def _async_started(self, _hass: HomeAssistant) -> None:
-        """A8, once HA is running (or at once, on a reload)."""
+        """D18 then A8, once HA is running (or at once, on a reload)."""
+        self.cleaning.recover_after_restart()
         self._resolve_status_now("opstart")
         self._decide(Trigger.STARTUP)
 
@@ -145,6 +149,7 @@ class UdespaController:
         self._unsubs.clear()
         self._cancel_satisfied_timer()
         self._cancel_status_timer()
+        await self.cleaning.async_shutdown()
         await self.heat_pump.async_shutdown()
         for task in list(self._tasks):
             task.cancel()
@@ -271,6 +276,33 @@ class UdespaController:
             "Filter timer nulstillet"
             if timer is Timer.FILTER
             else "Badevand timer nulstillet"
+        )
+
+    async def async_start_cleaning(self) -> None:
+        await self.cleaning.async_start()
+
+    async def async_stop_cleaning(self) -> None:
+        await self.cleaning.async_stop()
+
+    def set_cleaning_phase(self, phase: CleaningPhase) -> None:
+        self.state.cleaning_phase = phase
+        self.state.cleaning_started_at = (
+            dt_util.utcnow() if phase is not CleaningPhase.IDLE else None
+        )
+        self._save()
+        self._notify_listeners()
+
+    def restore_status(self, saved: Status | None, reason: str) -> None:
+        """After cleaning: the saved status, re-checked against failure and setpoint."""
+        base = saved if saved is not None else Status.MAINTAINING
+        self.set_status(
+            resolve_status(
+                base,
+                failure_open=self.state.failure_open,
+                fault_status_enabled=self.settings.fault_status,
+                from_setpoint=self._desired_status(),
+            ),
+            reason,
         )
 
     # --- status (B10-B12) ---------------------------------------------------
