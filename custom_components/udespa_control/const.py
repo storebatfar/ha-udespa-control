@@ -53,6 +53,61 @@ SUGGESTED_ENTITIES: Final[dict[str, str]] = {
     CONF_NOTIFY: "notify.mobile_app_thomas_iphone_15",
 }
 
+# --- Hub data sources (entry.data, settings section "sources") ----------------
+CONF_SRC_HP_OUTLET: Final = "src_hp_outlet"
+CONF_SRC_HP_COMPRESSOR: Final = "src_hp_compressor"
+CONF_SRC_HP_AMBIENT: Final = "src_hp_ambient"
+CONF_SRC_HP_COIL: Final = "src_hp_coil"
+CONF_SRC_HP_EXHAUST: Final = "src_hp_exhaust"
+CONF_SRC_HP_IPM: Final = "src_hp_ipm"
+CONF_SRC_HP_FAN: Final = "src_hp_fan"
+CONF_SRC_HP_EEV: Final = "src_hp_eev"
+CONF_SRC_HP_COMPRESSOR_CURRENT: Final = "src_hp_compressor_current"
+CONF_SRC_CIRCULATION_POWER: Final = "src_circulation_power"
+CONF_SRC_WATER_PH: Final = "src_water_ph"
+CONF_SRC_WATER_ORP: Final = "src_water_orp"
+CONF_SRC_WATER_TDS: Final = "src_water_tds"
+CONF_SRC_ONDILO_TEMPERATURE: Final = "src_ondilo_temperature"
+CONF_SRC_ONDILO_BATTERY: Final = "src_ondilo_battery"
+
+SOURCE_KEYS: Final = (
+    CONF_SRC_HP_OUTLET,
+    CONF_SRC_HP_COMPRESSOR,
+    CONF_SRC_HP_AMBIENT,
+    CONF_SRC_HP_COIL,
+    CONF_SRC_HP_EXHAUST,
+    CONF_SRC_HP_IPM,
+    CONF_SRC_HP_FAN,
+    CONF_SRC_HP_EEV,
+    CONF_SRC_HP_COMPRESSOR_CURRENT,
+    CONF_SRC_CIRCULATION_POWER,
+    CONF_SRC_WATER_PH,
+    CONF_SRC_WATER_ORP,
+    CONF_SRC_WATER_TDS,
+    CONF_SRC_ONDILO_TEMPERATURE,
+    CONF_SRC_ONDILO_BATTERY,
+)
+
+# Today's entities. No TDS entity exists, so TDS has no suggestion.
+SUGGESTED_SOURCES: Final[dict[str, str]] = {
+    CONF_SRC_HP_OUTLET: "sensor.udespa_varmepumpe_outlet_temperature",
+    CONF_SRC_HP_COMPRESSOR: "sensor.udespa_varmepumpe_compressor_strength",
+    CONF_SRC_HP_AMBIENT: "sensor.udespa_varmepumpe_ambient_temperature",
+    CONF_SRC_HP_COIL: "sensor.udespa_varmepumpe_coil_temperature",
+    CONF_SRC_HP_EXHAUST: "sensor.udespa_varmepumpe_exhaust_temperature",
+    CONF_SRC_HP_IPM: "sensor.udespa_varmepumpe_ipm_module",
+    CONF_SRC_HP_FAN: "sensor.udespa_varmepumpe_fan_speed",
+    CONF_SRC_HP_EEV: "sensor.udespa_varmepumpe_eev_step",
+    CONF_SRC_HP_COMPRESSOR_CURRENT: "sensor.udespa_varmepumpe_compressor_current",
+    CONF_SRC_CIRCULATION_POWER: "sensor.udespa_kwh_maler_power_phase_1",
+    CONF_SRC_WATER_PH: "sensor.udespa_ph_korrigeret",
+    CONF_SRC_WATER_ORP: "sensor.udespa_oxydo_reduction_potential",
+    CONF_SRC_ONDILO_TEMPERATURE: "sensor.udespa_temperatur",
+    CONF_SRC_ONDILO_BATTERY: "sensor.udespa_batteri",
+}
+
+SECTION_SOURCES: Final = "sources"
+
 # --- Numbers and toggles (entry.options) --------------------------------------
 OPT_OFF_DELAY: Final = "off_delay_s"
 OPT_HEAD_START_TIMEOUT: Final = "head_start_timeout_s"
@@ -132,7 +187,7 @@ DEFAULTS: Final[dict[str, Any]] = {
 SECTION_ENTITIES: Final = "entities"
 SECTION_NUMBERS: Final = "numbers"
 SECTION_TOGGLES: Final = "toggles"
-ALL_SECTIONS: Final = (SECTION_ENTITIES, SECTION_NUMBERS, SECTION_TOGGLES)
+ALL_SECTIONS: Final = (SECTION_ENTITIES, SECTION_NUMBERS, SECTION_TOGGLES, SECTION_SOURCES)
 
 # --- Fixed timings (measured; not settings) -----------------------------------
 VERIFY_POLL_S: Final = 15  # one verification step; retry window / 15 = attempts
@@ -146,6 +201,16 @@ SETPOINT_STEP: Final = 0.5
 SERVICE_TIMEOUT_S: Final = 10
 LAST_ACTION_MAX: Final = 255
 WATCH_ONLY_PREFIX: Final = "(kun overvågning) "
+
+OFFSET_VALUES: Final = (0.0, 0.5, 1.0)
+SYNC_TOLERANCE: Final = 0.05
+DEFAULT_HP_LIMITS: Final = (6.0, 41.0)
+
+DEMAND_LABELS: Final[dict[str, str]] = {
+    "heating": "Kalder på varme",
+    "idle": "Flowtjek",
+    "off": "Ingen efterspørgsel",
+}
 
 # --- Legacy helpers, read once on first load so nothing restarts from zero ----
 LEGACY_FILTER_TIMER: Final = "input_datetime.udespa_filter_timer"
@@ -205,3 +270,11 @@ class BackupKind(StrEnum):
 class Timer(StrEnum):
     FILTER = "filter"
     BATH_WATER = "bath_water"
+
+
+class SyncStatus(StrEnum):
+    """Heat-pump target against spa setpoint + offset (A9′)."""
+
+    IN_SYNC = "I sync"
+    DIFFERS = "Afviger"
+    UNKNOWN = "Ukendt"

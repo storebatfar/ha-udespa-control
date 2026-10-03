@@ -6,15 +6,21 @@ from datetime import UTC, datetime, timedelta
 
 import pytest
 
-from custom_components.udespa_control.const import Mode, Status
+from custom_components.udespa_control.const import Mode, Status, SyncStatus
 from custom_components.udespa_control.rules import (
+    demand_label,
     desired_status,
     frost_action,
+    heat_pump_target,
     mode_for_preset,
     mode_for_status,
     nudged_setpoint,
     resolve_status,
     restorable_status,
+    round_power,
+    snap_offset,
+    sync_status,
+    temperature_rise,
     whole_days_since,
 )
 
@@ -205,3 +211,60 @@ def test_whole_days_never_negative():
 )
 def test_restorable_status(saved, expected):
     assert restorable_status(saved) is expected
+
+
+@pytest.mark.parametrize(
+    "value,expected",
+    [(0, 0.0), (0.5, 0.5), (1, 1.0), (0.7, 0.5), (0.8, 1.0), (0.2, 0.0), (5, 1.0), (-1, 0.0), ("x", 0.0), (None, 0.0), (True, 0.0)],
+)
+def test_snap_offset(value, expected):
+    assert snap_offset(value) == expected
+
+
+def test_heat_pump_target_adds_the_offset():
+    assert heat_pump_target(37.0, 0.5, 6, 41) == (37.5, False)
+    assert heat_pump_target(40.0, 1.0, 6, 41) == (41.0, False)
+
+
+def test_heat_pump_target_is_capped_and_floored():
+    assert heat_pump_target(40.5, 1.0, 6, 41) == (41.0, True)
+    assert heat_pump_target(5.0, 0.0, 6, 41) == (6.0, True)
+
+
+def test_heat_pump_target_rounds_to_a_tenth():
+    assert heat_pump_target(37.04, 0.5, 6, 41) == (37.5, False)
+
+
+def test_heat_pump_target_needs_a_setpoint():
+    assert heat_pump_target(None, 0.5, 6, 41) is None
+
+
+def test_sync_status():
+    assert sync_status(37.5, 37.5) is SyncStatus.IN_SYNC
+    assert sync_status(37.5, 37.54) is SyncStatus.IN_SYNC
+    assert sync_status(37.5, 37.0) is SyncStatus.DIFFERS
+    assert sync_status(None, 37.0) is SyncStatus.UNKNOWN
+    assert sync_status(37.0, None) is SyncStatus.UNKNOWN
+
+
+def test_temperature_rise():
+    assert temperature_rise(36.0, 38.4) == 2.4
+    assert temperature_rise(36.4, 36.0) == -0.4
+    assert temperature_rise(None, 38.0) is None
+    assert temperature_rise(36.0, None) is None
+
+
+def test_round_power():
+    assert round_power(1234.6) == 1235
+    assert round_power(7.481) == 7
+    assert round_power(1234.5) == 1235  # half up, not Python's half-to-even
+    assert round_power(2.5) == 3
+    assert round_power(None) is None
+
+
+def test_demand_label():
+    assert demand_label("heating") == "Kalder på varme"
+    assert demand_label("idle") == "Flowtjek"
+    assert demand_label("off") == "Ingen efterspørgsel"
+    assert demand_label("cooling") is None
+    assert demand_label(None) is None

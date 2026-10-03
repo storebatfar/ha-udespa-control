@@ -100,3 +100,10 @@ async def test_remove_deletes_the_file(hass: HomeAssistant, hass_storage):
     assert "udespa_control.entry1" in hass_storage
     await store.async_remove()
     assert "udespa_control.entry1" not in hass_storage
+
+
+def test_offset_round_trips_and_snaps():
+    assert StoredState.from_dict({"offset": 1.0}).offset == 1.0
+    assert StoredState.from_dict({"offset": 0.7}).offset == 0.5
+    assert StoredState.from_dict({}).offset == 0.0
+    assert StoredState(offset=0.5).to_dict()["offset"] == 0.5

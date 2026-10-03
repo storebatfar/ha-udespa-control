@@ -12,12 +12,18 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from . import UdespaConfigEntry
 from .controller import UdespaController
 from .entity import UdespaEntity
+from .hub import HubCirculationSensor
 
 
 async def async_setup_entry(
     hass: HomeAssistant, entry: UdespaConfigEntry, async_add_entities: AddEntitiesCallback
 ) -> None:
-    async_add_entities([HeatPumpFailureSensor(entry.runtime_data)])
+    async_add_entities(
+        [
+            HeatPumpFailureSensor(entry.runtime_data),
+            HubCirculationSensor(entry.runtime_data),
+        ]
+    )
 
 
 class HeatPumpFailureSensor(UdespaEntity, BinarySensorEntity):

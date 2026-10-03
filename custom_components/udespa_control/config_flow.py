@@ -54,8 +54,11 @@ from .const import (
     PRESET_KEYS,
     SECTION_ENTITIES,
     SECTION_NUMBERS,
+    SECTION_SOURCES,
     SECTION_TOGGLES,
+    SOURCE_KEYS,
     SUGGESTED_ENTITIES,
+    SUGGESTED_SOURCES,
     TOGGLE_KEYS,
 )
 
@@ -92,6 +95,11 @@ ENTITY_FIELDS: tuple[tuple[str, bool, Any], ...] = (
     (CONF_NOTIFY, True, selector.TextSelector()),
 )
 
+# Hub data sources: all optional; an empty field means no copy.
+SOURCE_FIELDS: tuple[tuple[str, bool, Any], ...] = tuple(
+    (key, False, _entity(domain="sensor")) for key in SOURCE_KEYS
+)
+
 NUMBER_FIELDS: dict[str, Any] = {
     OPT_OFF_DELAY: _number(0, 120, 1, "s"),
     OPT_HEAD_START_TIMEOUT: _number(10, 300, 1, "s"),
@@ -110,14 +118,24 @@ NUMBER_FIELDS: dict[str, Any] = {
 }
 
 
-def _entities_schema(values: Mapping[str, Any]) -> vol.Schema:
-    fields: dict[Any, Any] = {}
-    for key, required, field_selector in ENTITY_FIELDS:
+def _optional_entities_schema(
+    fields: tuple[tuple[str, bool, Any], ...], values: Mapping[str, Any]
+) -> vol.Schema:
+    schema: dict[Any, Any] = {}
+    for key, required, field_selector in fields:
         marker = vol.Required if required else vol.Optional
         value = values.get(key)
         description = {"suggested_value": value} if value else None
-        fields[marker(key, description=description)] = field_selector
-    return vol.Schema(fields)
+        schema[marker(key, description=description)] = field_selector
+    return vol.Schema(schema)
+
+
+def _entities_schema(values: Mapping[str, Any]) -> vol.Schema:
+    return _optional_entities_schema(ENTITY_FIELDS, values)
+
+
+def _sources_schema(values: Mapping[str, Any]) -> vol.Schema:
+    return _optional_entities_schema(SOURCE_FIELDS, values)
 
 
 def _numbers_schema(values: Mapping[str, Any]) -> vol.Schema:
@@ -147,6 +165,7 @@ _BUILDERS = {
     SECTION_ENTITIES: (_entities_schema, False),
     SECTION_NUMBERS: (_numbers_schema, True),
     SECTION_TOGGLES: (_toggles_schema, True),
+    SECTION_SOURCES: (_sources_schema, True),
 }
 
 
@@ -178,7 +197,8 @@ def split(user_input: Mapping[str, Any]) -> tuple[dict[str, Any], dict[str, Any]
     """(entry.data, entry.options) from a submitted form."""
     data = {
         key: value
-        for key, value in user_input.get(SECTION_ENTITIES, {}).items()
+        for name in (SECTION_ENTITIES, SECTION_SOURCES)
+        for key, value in user_input.get(name, {}).items()
         if value not in (None, "")
     }
     if CONF_NOTIFY in data:
@@ -211,7 +231,10 @@ def validate(
 
 
 class UdespaControlConfigFlow(ConfigFlow, domain=DOMAIN):
+    # Additive changes bump MINOR_VERSION only, so an older release still loads
+    # the entry after a rollback.
     VERSION = 1
+    MINOR_VERSION = 2
 
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
@@ -225,7 +248,7 @@ class UdespaControlConfigFlow(ConfigFlow, domain=DOMAIN):
                 await self.async_set_unique_id(data[CONF_SPA])
                 self._abort_if_unique_id_configured()
                 return self.async_create_entry(title="Udespa", data=data, options=options)
-        values = flatten(user_input) if user_input else {**SUGGESTED_ENTITIES, **DEFAULTS}
+        values = flatten(user_input) if user_input else {**SUGGESTED_ENTITIES, **SUGGESTED_SOURCES, **DEFAULTS}
         return self.async_show_form(
             step_id="user", data_schema=build_schema(values, ALL_SECTIONS), errors=errors
         )
@@ -241,6 +264,11 @@ class UdespaControlConfigFlow(ConfigFlow, domain=DOMAIN):
             errors = validate(self.hass, user_input, heat_pump)
             if not errors:
                 data, _ = split(user_input)
+                # Reconfigure doesn't show Datakilder; keep what it doesn't show.
+                data = {
+                    **{k: v for k, v in entry.data.items() if k in SOURCE_KEYS},
+                    **data,
+                }
                 return self.async_update_reload_and_abort(entry, data=data)
         values = flatten(user_input) if user_input else dict(entry.data)
         return self.async_show_form(

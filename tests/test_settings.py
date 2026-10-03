@@ -13,10 +13,14 @@ from custom_components.udespa_control.const import (
     CONF_OUTDOOR,
     CONF_OUTDOOR_ATTRIBUTE,
     CONF_SPA,
+    CONF_SRC_HP_OUTLET,
+    CONF_SRC_WATER_TDS,
     DEFAULTS,
     OPT_PRESET_TURBO,
     OPT_RETRY_MINUTES,
     OPT_WATCHDOG,
+    SOURCE_KEYS,
+    SUGGESTED_SOURCES,
     Mode,
 )
 from custom_components.udespa_control.settings import Settings
@@ -75,3 +79,20 @@ def test_blank_outdoor_attribute_means_state():
 
 def test_every_option_has_a_default():
     assert set(DEFAULTS) >= {OPT_RETRY_MINUTES, OPT_WATCHDOG, OPT_PRESET_TURBO}
+
+
+def test_sources_hold_only_configured_keys():
+    s = Settings.from_mappings(
+        {**DATA, CONF_SRC_HP_OUTLET: "sensor.outlet", CONF_SRC_WATER_TDS: ""}, {}
+    )
+    assert s.sources == {CONF_SRC_HP_OUTLET: "sensor.outlet"}
+
+
+def test_no_sources_by_default():
+    assert Settings.from_mappings(DATA, {}).sources == {}
+
+
+def test_suggested_sources_are_known_keys_without_tds():
+    assert set(SUGGESTED_SOURCES) <= set(SOURCE_KEYS)
+    assert CONF_SRC_WATER_TDS not in SUGGESTED_SOURCES
+    assert len(SOURCE_KEYS) == 15

@@ -7,11 +7,24 @@ up in "Seneste handling".
 
 from __future__ import annotations
 
+import math
 from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import datetime, timedelta
+from typing import Any
 
-from .const import SPA_CALLING, BackupKind, HeatAction, Mode, Status, Trigger
+from .const import (
+    DEMAND_LABELS,
+    OFFSET_VALUES,
+    SPA_CALLING,
+    SYNC_TOLERANCE,
+    BackupKind,
+    HeatAction,
+    Mode,
+    Status,
+    SyncStatus,
+    Trigger,
+)
 
 
 @dataclass(frozen=True)
@@ -312,3 +325,46 @@ def restorable_status(saved: str | None) -> Status | None:
     except ValueError:
         return None
     return None if status is Status.CLEANING else status
+
+
+def snap_offset(value: Any) -> float:
+    """The nearest allowed offset (0, 0.5, 1.0); anything unusable is 0."""
+    if isinstance(value, bool) or not isinstance(value, int | float):
+        return 0.0
+    clamped = min(max(float(value), OFFSET_VALUES[0]), OFFSET_VALUES[-1])
+    return round(clamped * 2) / 2
+
+
+def heat_pump_target(
+    setpoint: float | None, offset: float, min_temp: float, max_temp: float
+) -> tuple[float, bool] | None:
+    """A9′: (target, capped). None without a spa setpoint."""
+    if setpoint is None:
+        return None
+    wanted = round(setpoint + offset, 1)
+    target = min(max(wanted, min_temp), max_temp)
+    return target, target != wanted
+
+
+def sync_status(expected: float | None, actual: float | None) -> SyncStatus:
+    if expected is None or actual is None:
+        return SyncStatus.UNKNOWN
+    if abs(expected - actual) <= SYNC_TOLERANCE:
+        return SyncStatus.IN_SYNC
+    return SyncStatus.DIFFERS
+
+
+def temperature_rise(inlet: float | None, outlet: float | None) -> float | None:
+    """How much the heat pump warms the water passing through it."""
+    if inlet is None or outlet is None:
+        return None
+    return round(outlet - inlet, 1)
+
+
+def round_power(value: float | None) -> int | None:
+    """Whole watts, halves rounded up (Python's round() goes to even)."""
+    return None if value is None else math.floor(value + 0.5)
+
+
+def demand_label(action: Any) -> str | None:
+    return DEMAND_LABELS.get(action) if isinstance(action, str) else None

@@ -23,6 +23,7 @@ from .const import (
     CleaningPhase,
     Status,
 )
+from .rules import snap_offset
 
 _DATETIME_FIELDS = (
     "cleaning_started_at",
@@ -36,6 +37,7 @@ class StoredState:
     active: bool = False
     frost_protection: bool = True
     rest_temperature: float = DEFAULT_REST_TEMPERATURE
+    offset: float = 0.0
     status: Status = Status.MAINTAINING
     saved_status: str | None = None
     failure_open: bool = False
@@ -87,6 +89,7 @@ class StoredState:
             rest_temperature=float(rest)
             if isinstance(rest, int | float) and not isinstance(rest, bool)
             else default.rest_temperature,
+            offset=snap_offset(data.get("offset", 0.0)),
             status=status,
             saved_status=saved if isinstance(saved, str) else None,
             failure_open=_bool("failure_open"),
