@@ -159,6 +159,9 @@ class FakeTub:
                 "preset_mode": hp_preset,
                 "preset_modes": ["quick", "smart", "quiet"],
                 "temperature": setpoint,
+                "current_temperature": 35.0,
+                "min_temp": 6,
+                "max_temp": 41,
             },
         )
         self.hp_power(hp_power)

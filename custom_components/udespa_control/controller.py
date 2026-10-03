@@ -42,6 +42,7 @@ from .const import (
     CleaningPhase,
     Mode,
     Status,
+    SyncStatus,
     Timer,
     Trigger,
 )
@@ -56,13 +57,16 @@ from .rules import (
     frost_action,
     heat_decision,
     heat_pump_running,
+    heat_pump_target,
     mode_for_preset,
     mode_for_status,
     nudged_setpoint,
     resolve_status,
+    snap_offset,
     watchdog_should_act,
     whole_days_since,
 )
+from .rules import sync_status as rule_sync_status
 from .settings import Settings
 from .storage import StoredState, UdespaStore
 
@@ -78,6 +82,7 @@ class UdespaController:
         self.state = StoredState()
         self.last_action: str | None = None
         self.last_action_at: datetime | None = None
+        self.last_sync_at: datetime | None = None
         # The last 50 records, in memory: handy when comparing watch-only output.
         self.recent: deque[str] = deque(maxlen=50)
         self.actuators = Actuators(
@@ -139,6 +144,8 @@ class UdespaController:
         self.cleaning.recover_after_restart()
         self._resolve_status_now("opstart")
         self._decide(Trigger.STARTUP)
+        if self._sync_needed():
+            self._spawn(self._async_sync_target("opstart"), "temperature sync")
 
     async def async_shutdown(self) -> None:
         if self._shut_down:
@@ -228,6 +235,10 @@ class UdespaController:
             self.record("Aktiv styring slået til")
             # Take over the current situation now, not at the next trigger.
             self._decide(Trigger.STARTUP)
+            if self._sync_needed():
+                self._spawn(
+                    self._async_sync_target("aktiv styring slået til"), "temperature sync"
+                )
         else:
             self.record("Aktiv styring slået fra: kun overvågning")
 
@@ -304,6 +315,49 @@ class UdespaController:
             ),
             reason,
         )
+
+    # --- temperature sync (A9′) ---------------------------------------------
+
+    def expected_target(self) -> tuple[float, bool] | None:
+        low, high = self.reader.hp_limits()
+        return heat_pump_target(self.reader.setpoint(), self.state.offset, low, high)
+
+    def sync_status(self) -> SyncStatus:
+        expected = self.expected_target()
+        return rule_sync_status(
+            expected[0] if expected is not None else None, self.reader.hp_target()
+        )
+
+    def sync_attributes(self) -> dict[str, Any]:
+        expected = self.expected_target()
+        return {
+            "spa_setpoint": self.reader.setpoint(),
+            "offset": self.state.offset,
+            "expected_target": expected[0] if expected is not None else None,
+            "heat_pump_target": self.reader.hp_target(),
+            "capped": expected[1] if expected is not None else False,
+            "last_sync": self.last_sync_at.isoformat() if self.last_sync_at else None,
+        }
+
+    def _sync_needed(self) -> bool:
+        """Only a known difference syncs; an unavailable heat pump never does."""
+        return self.sync_status() is SyncStatus.DIFFERS
+
+    async def _async_sync_target(self, reason: str) -> None:
+        expected = self.expected_target()
+        if expected is None:
+            return
+        self.last_sync_at = dt_util.utcnow()
+        await self.actuators.heat_pump_temperature(expected[0], reason)
+        self._notify_listeners()
+
+    async def async_set_offset(self, value: float) -> None:
+        """The user's handle for a little extra; stored even in watch-only."""
+        self.state.offset = snap_offset(value)
+        self._save()
+        self.record(f"Varmepumpe offset {fmt_c(self.state.offset)} °C")
+        if self._sync_needed():
+            await self._async_sync_target("offset ændret")
 
     # --- status (B10-B12) ---------------------------------------------------
 
@@ -429,11 +483,9 @@ class UdespaController:
         old_setpoint = TubReader.attr_float(old, "temperature")
         new_setpoint = TubReader.attr_float(new, "temperature")
         if new_setpoint is not None and new_setpoint != old_setpoint:
-            if self.reader.hp_target() != new_setpoint:
+            if self._sync_needed():
                 self._spawn(
-                    self.actuators.heat_pump_temperature(
-                        new_setpoint, "følger spaens setpunkt"
-                    ),
+                    self._async_sync_target("følger spaens setpunkt"),
                     "temperature sync",
                 )
             self._evaluate_status_soon()

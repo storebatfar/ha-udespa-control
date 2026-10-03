@@ -13,6 +13,7 @@ from custom_components.udespa_control.const import (
     OPT_WATCHDOG,
     Mode,
     Status,
+    SyncStatus,
     Timer,
 )
 
@@ -476,3 +477,99 @@ async def test_frost_crossing_during_the_backup_check_keeps_the_heater_on(
     tub.outdoor(6.0)
     await advance(hass, freezer, 150, step=10)
     assert "off" not in tub.heater_commands()
+
+
+# --- A9′ offset and sync status ----------------------------------------------
+
+
+def _hp_target(hass):
+    return hass.states.get(HP).attributes["temperature"]
+
+
+async def test_offset_adds_to_the_heat_pump_target(hass: HomeAssistant, tub: FakeTub, make_controller):
+    controller = await make_controller()
+    await controller.async_set_offset(1.0)
+    await settle(hass)
+    assert _hp_target(hass) == 38.0
+    tub.spa(setpoint=39.5)
+    await settle(hass)
+    assert _hp_target(hass) == 40.5
+    tub.spa(setpoint=40.5)
+    await settle(hass)
+    assert _hp_target(hass) == 41
+    assert controller.sync_attributes()["capped"] is True
+    assert controller.sync_status() is SyncStatus.IN_SYNC
+
+
+async def test_offset_snaps_to_half_degrees(hass: HomeAssistant, tub: FakeTub, make_controller):
+    controller = await make_controller()
+    await controller.async_set_offset(0.7)
+    assert controller.state.offset == 0.5
+
+
+async def test_sync_status_reports_but_never_fights_an_external_change(
+    hass: HomeAssistant, tub: FakeTub, make_controller
+):
+    controller = await make_controller()
+    assert controller.sync_status() is SyncStatus.IN_SYNC
+    hass.states.async_set(HP, "off", {**hass.states.get(HP).attributes, "temperature": 35.0})
+    await settle(hass)
+    assert controller.sync_status() is SyncStatus.DIFFERS
+    assert tub.sent("climate", "set_temperature") == []
+
+
+async def test_no_sync_while_the_heat_pump_is_unavailable(
+    hass: HomeAssistant, tub: FakeTub, make_controller
+):
+    controller = await make_controller()
+    hass.states.async_set(HP, "unavailable", {})
+    tub.spa(setpoint=38.0)
+    await settle(hass)
+    assert controller.sync_status() is SyncStatus.UNKNOWN
+    assert tub.sent("climate", "set_temperature") == []
+
+
+async def test_startup_and_activation_resync_a_wrong_target(
+    hass: HomeAssistant, tub: FakeTub, make_controller
+):
+    hass.states.async_set(HP, "off", {**hass.states.get(HP).attributes, "temperature": 35.0})
+    controller = await make_controller(active=False)
+    assert any(
+        line.startswith("(kun overvågning) Varmepumpe mål 37,0 °C: opstart")
+        for line in controller.recent
+    )
+    assert controller.sync_attributes()["last_sync"] is not None
+    await controller.async_set_active(True)
+    await settle(hass)
+    assert _hp_target(hass) == 37.0
+
+
+async def test_watch_only_logs_the_offset_sync(hass: HomeAssistant, tub: FakeTub, make_controller):
+    controller = await make_controller(active=False)
+    await controller.async_set_offset(1.0)
+    await settle(hass)
+    assert tub.sent("climate", "set_temperature") == []
+    assert "(kun overvågning) Varmepumpe mål 38,0 °C: offset ændret" in controller.recent
+    assert controller.state.offset == 1.0
+    assert controller.sync_status() is SyncStatus.DIFFERS
+
+
+async def test_sync_attributes(hass: HomeAssistant, tub: FakeTub, make_controller):
+    controller = await make_controller()
+    await controller.async_set_offset(0.5)
+    await settle(hass)
+    attrs = controller.sync_attributes()
+    assert attrs["spa_setpoint"] == 37.0
+    assert attrs["offset"] == 0.5
+    assert attrs["expected_target"] == 37.5
+    assert attrs["heat_pump_target"] == 37.5
+    assert attrs["capped"] is False
+    assert attrs["last_sync"]
+
+
+async def test_offset_survives_a_restart(hass: HomeAssistant, tub: FakeTub, make_controller):
+    first = await make_controller()
+    await first.async_set_offset(0.5)
+    await first.async_shutdown()
+    second = await make_controller(active=False, entry=first.entry)
+    assert second.state.offset == 0.5

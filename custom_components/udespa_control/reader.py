@@ -12,6 +12,7 @@ from typing import Any
 from homeassistant.const import STATE_ON, STATE_UNAVAILABLE, STATE_UNKNOWN
 from homeassistant.core import HomeAssistant, State
 
+from .const import DEFAULT_HP_LIMITS
 from .settings import Settings
 
 _INVALID = (None, STATE_UNAVAILABLE, STATE_UNKNOWN, "")
@@ -109,6 +110,15 @@ class TubReader:
 
     def hp_target(self) -> float | None:
         return self.attr_float(self._hp(), "temperature")
+
+    def hp_limits(self) -> tuple[float, float]:
+        hp = self._hp()
+        low = self.attr_float(hp, "min_temp")
+        high = self.attr_float(hp, "max_temp")
+        return (
+            low if low is not None else DEFAULT_HP_LIMITS[0],
+            high if high is not None else DEFAULT_HP_LIMITS[1],
+        )
 
     def hp_power(self) -> float | None:
         state = self._state(self._s.heat_pump_power)
