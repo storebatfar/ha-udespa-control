@@ -6,8 +6,9 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import config_validation as cv
+from homeassistant.helpers import entity_registry as er
 
-from .const import DOMAIN
+from .const import DOMAIN, SUGGESTED_SOURCES
 from .controller import UdespaController
 from .storage import UdespaStore
 
@@ -43,3 +44,24 @@ async def async_unload_entry(hass: HomeAssistant, entry: UdespaConfigEntry) -> b
 async def async_remove_entry(hass: HomeAssistant, entry: UdespaConfigEntry) -> None:
     """Deleting the integration deletes its stored state too."""
     await UdespaStore(hass, entry.entry_id).async_remove()
+
+
+async def async_migrate_entry(hass: HomeAssistant, entry: UdespaConfigEntry) -> bool:
+    """v1 → v2: fill the new data sources with today's entities that exist.
+
+    Looks in the entity registry as well as the state machine: at HA start the
+    source integrations may not have loaded yet, so their states can be missing.
+    A source already chosen is never overwritten.
+    """
+    if entry.version == 1:
+        registry = er.async_get(hass)
+        found = {
+            key: entity_id
+            for key, entity_id in SUGGESTED_SOURCES.items()
+            if registry.async_get(entity_id) is not None
+            or hass.states.get(entity_id) is not None
+        }
+        hass.config_entries.async_update_entry(
+            entry, data={**found, **entry.data}, version=2
+        )
+    return True

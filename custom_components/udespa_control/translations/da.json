@@ -96,6 +96,44 @@
               "notifications": "Send advarsler til notifikationstjenesten.",
               "fault_status": "Vis Fejl som status, mens en varmepumpefejl er åben."
             }
+          },
+          "sources": {
+            "name": "Datakilder",
+            "description": "Værdierne der samles på Udespa-enheden. Lad et felt stå tomt for ingen kopi.",
+            "data": {
+              "src_hp_outlet": "Varmepumpe udløbstemperatur",
+              "src_hp_compressor": "Varmepumpe kompressor",
+              "src_hp_ambient": "Varmepumpe omgivelsestemperatur",
+              "src_hp_coil": "Varmepumpe spoletemperatur",
+              "src_hp_exhaust": "Varmepumpe afgangstemperatur",
+              "src_hp_ipm": "Varmepumpe IPM-temperatur",
+              "src_hp_fan": "Varmepumpe blæserhastighed",
+              "src_hp_eev": "Varmepumpe EEV-trin",
+              "src_hp_compressor_current": "Varmepumpe kompressorstrøm",
+              "src_circulation_power": "Cirkulation effekt",
+              "src_water_ph": "Vand pH",
+              "src_water_orp": "Vand ORP",
+              "src_water_tds": "Vand TDS",
+              "src_ondilo_temperature": "Ondilo temperatur",
+              "src_ondilo_battery": "Ondilo batteri"
+            },
+            "data_description": {
+              "src_hp_outlet": "Kilde til varmepumpens udløbstemperatur. Bruges også til temperaturstigningen.",
+              "src_hp_compressor": "Kilde til kompressorens styrke.",
+              "src_hp_ambient": "Kilde til lufttemperaturen ved varmepumpen.",
+              "src_hp_coil": "Diagnostik.",
+              "src_hp_exhaust": "Diagnostik.",
+              "src_hp_ipm": "Diagnostik.",
+              "src_hp_fan": "Diagnostik.",
+              "src_hp_eev": "Diagnostik.",
+              "src_hp_compressor_current": "Diagnostik.",
+              "src_circulation_power": "Effekt på den målerfase, der kun bærer cirkulationspumpen.",
+              "src_water_ph": "Den pH-værdi dashboards viser (den korrigerede).",
+              "src_water_orp": "Kilde til ORP-værdien.",
+              "src_water_tds": "Kilde til TDS, hvis du har en.",
+              "src_ondilo_temperature": "Ondiloens vandtemperatur. Kun til visning; den opdateres hver time, og ingen regel bruger den.",
+              "src_ondilo_battery": "Kilde til Ondiloens batteriniveau."
+            }
           }
         }
       },
@@ -244,6 +282,44 @@
               "watchdog": "Tjek jævnligt, at varmepumpen kører, mens vandet er koldt.",
               "notifications": "Send advarsler til notifikationstjenesten.",
               "fault_status": "Vis Fejl som status, mens en varmepumpefejl er åben."
+            }
+          },
+          "sources": {
+            "name": "Datakilder",
+            "description": "Værdierne der samles på Udespa-enheden. Lad et felt stå tomt for ingen kopi.",
+            "data": {
+              "src_hp_outlet": "Varmepumpe udløbstemperatur",
+              "src_hp_compressor": "Varmepumpe kompressor",
+              "src_hp_ambient": "Varmepumpe omgivelsestemperatur",
+              "src_hp_coil": "Varmepumpe spoletemperatur",
+              "src_hp_exhaust": "Varmepumpe afgangstemperatur",
+              "src_hp_ipm": "Varmepumpe IPM-temperatur",
+              "src_hp_fan": "Varmepumpe blæserhastighed",
+              "src_hp_eev": "Varmepumpe EEV-trin",
+              "src_hp_compressor_current": "Varmepumpe kompressorstrøm",
+              "src_circulation_power": "Cirkulation effekt",
+              "src_water_ph": "Vand pH",
+              "src_water_orp": "Vand ORP",
+              "src_water_tds": "Vand TDS",
+              "src_ondilo_temperature": "Ondilo temperatur",
+              "src_ondilo_battery": "Ondilo batteri"
+            },
+            "data_description": {
+              "src_hp_outlet": "Kilde til varmepumpens udløbstemperatur. Bruges også til temperaturstigningen.",
+              "src_hp_compressor": "Kilde til kompressorens styrke.",
+              "src_hp_ambient": "Kilde til lufttemperaturen ved varmepumpen.",
+              "src_hp_coil": "Diagnostik.",
+              "src_hp_exhaust": "Diagnostik.",
+              "src_hp_ipm": "Diagnostik.",
+              "src_hp_fan": "Diagnostik.",
+              "src_hp_eev": "Diagnostik.",
+              "src_hp_compressor_current": "Diagnostik.",
+              "src_circulation_power": "Effekt på den målerfase, der kun bærer cirkulationspumpen.",
+              "src_water_ph": "Den pH-værdi dashboards viser (den korrigerede).",
+              "src_water_orp": "Kilde til ORP-værdien.",
+              "src_water_tds": "Kilde til TDS, hvis du har en.",
+              "src_ondilo_temperature": "Ondiloens vandtemperatur. Kun til visning; den opdateres hver time, og ingen regel bruger den.",
+              "src_ondilo_battery": "Kilde til Ondiloens batteriniveau."
             }
           }
         }

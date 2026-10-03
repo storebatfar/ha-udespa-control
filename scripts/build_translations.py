@@ -20,7 +20,9 @@ from custom_components.udespa_control.const import (
     PRESET_KEYS,
     SECTION_ENTITIES,
     SECTION_NUMBERS,
+    SECTION_SOURCES,
     SECTION_TOGGLES,
+    SOURCE_KEYS,
     TOGGLE_KEYS,
 )
 
@@ -235,9 +237,30 @@ FIELDS: dict[str, tuple[str, str, str, str]] = {
         "Status Fejl ved varmepumpefejl",
         "Vis Fejl som status, mens en varmepumpefejl er åben.",
     ),
+    "src_hp_outlet": ("Heat pump outlet temperature", "Source for the heat pump's outlet temperature. Also used for the temperature rise.", "Varmepumpe udløbstemperatur", "Kilde til varmepumpens udløbstemperatur. Bruges også til temperaturstigningen."),
+    "src_hp_compressor": ("Heat pump compressor", "Source for the compressor strength.", "Varmepumpe kompressor", "Kilde til kompressorens styrke."),
+    "src_hp_ambient": ("Heat pump ambient temperature", "Source for the air temperature at the heat pump.", "Varmepumpe omgivelsestemperatur", "Kilde til lufttemperaturen ved varmepumpen."),
+    "src_hp_coil": ("Heat pump coil temperature", "Diagnostic.", "Varmepumpe spoletemperatur", "Diagnostik."),
+    "src_hp_exhaust": ("Heat pump exhaust temperature", "Diagnostic.", "Varmepumpe afgangstemperatur", "Diagnostik."),
+    "src_hp_ipm": ("Heat pump IPM temperature", "Diagnostic.", "Varmepumpe IPM-temperatur", "Diagnostik."),
+    "src_hp_fan": ("Heat pump fan speed", "Diagnostic.", "Varmepumpe blæserhastighed", "Diagnostik."),
+    "src_hp_eev": ("Heat pump EEV step", "Diagnostic.", "Varmepumpe EEV-trin", "Diagnostik."),
+    "src_hp_compressor_current": ("Heat pump compressor current", "Diagnostic.", "Varmepumpe kompressorstrøm", "Diagnostik."),
+    "src_circulation_power": ("Circulation power", "Power on the meter phase that carries only the circulation pump.", "Cirkulation effekt", "Effekt på den målerfase, der kun bærer cirkulationspumpen."),
+    "src_water_ph": ("Water pH", "The pH value the dashboards show (the corrected one).", "Vand pH", "Den pH-værdi dashboards viser (den korrigerede)."),
+    "src_water_orp": ("Water ORP", "Source for the ORP value.", "Vand ORP", "Kilde til ORP-værdien."),
+    "src_water_tds": ("Water TDS", "Source for TDS, if you have one.", "Vand TDS", "Kilde til TDS, hvis du har en."),
+    "src_ondilo_temperature": ("Ondilo temperature", "The Ondilo's water temperature. Display only; it updates hourly and no rule uses it.", "Ondilo temperatur", "Ondiloens vandtemperatur. Kun til visning; den opdateres hver time, og ingen regel bruger den."),
+    "src_ondilo_battery": ("Ondilo battery", "Source for the Ondilo's battery level.", "Ondilo batteri", "Kilde til Ondiloens batteriniveau."),
 }
 
 SECTIONS: dict[str, tuple[str, str, str, str]] = {
+    SECTION_SOURCES: (
+        "Data sources",
+        "The values gathered on the Udespa device. Leave a field empty for no copy.",
+        "Datakilder",
+        "Værdierne der samles på Udespa-enheden. Lad et felt stå tomt for ingen kopi.",
+    ),
     SECTION_ENTITIES: (
         "Entities",
         "The devices Udespa Control works through. It never talks to hardware directly.",
@@ -262,6 +285,7 @@ SECTION_FIELDS: dict[str, tuple[str, ...]] = {
     SECTION_ENTITIES: ENTITY_KEYS,
     SECTION_NUMBERS: (*NUMBER_KEYS, *PRESET_KEYS),
     SECTION_TOGGLES: TOGGLE_KEYS,
+    SECTION_SOURCES: SOURCE_KEYS,
 }
 
 STEPS: dict[str, tuple[str, str, str, str]] = {
@@ -384,7 +408,7 @@ def _step(step_id: str, sections: tuple[str, ...], lang: int) -> dict:
 
 
 def build(lang: int) -> dict:
-    all_sections = (SECTION_ENTITIES, SECTION_NUMBERS, SECTION_TOGGLES)
+    all_sections = (SECTION_ENTITIES, SECTION_NUMBERS, SECTION_TOGGLES, SECTION_SOURCES)
     errors = {key: texts[lang] for key, texts in ERRORS.items()}
     return {
         "config": {

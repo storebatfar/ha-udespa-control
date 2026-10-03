@@ -96,6 +96,44 @@
               "notifications": "Send alerts to the notification service.",
               "fault_status": "Show Fejl as the status while a heat pump failure is open."
             }
+          },
+          "sources": {
+            "name": "Data sources",
+            "description": "The values gathered on the Udespa device. Leave a field empty for no copy.",
+            "data": {
+              "src_hp_outlet": "Heat pump outlet temperature",
+              "src_hp_compressor": "Heat pump compressor",
+              "src_hp_ambient": "Heat pump ambient temperature",
+              "src_hp_coil": "Heat pump coil temperature",
+              "src_hp_exhaust": "Heat pump exhaust temperature",
+              "src_hp_ipm": "Heat pump IPM temperature",
+              "src_hp_fan": "Heat pump fan speed",
+              "src_hp_eev": "Heat pump EEV step",
+              "src_hp_compressor_current": "Heat pump compressor current",
+              "src_circulation_power": "Circulation power",
+              "src_water_ph": "Water pH",
+              "src_water_orp": "Water ORP",
+              "src_water_tds": "Water TDS",
+              "src_ondilo_temperature": "Ondilo temperature",
+              "src_ondilo_battery": "Ondilo battery"
+            },
+            "data_description": {
+              "src_hp_outlet": "Source for the heat pump's outlet temperature. Also used for the temperature rise.",
+              "src_hp_compressor": "Source for the compressor strength.",
+              "src_hp_ambient": "Source for the air temperature at the heat pump.",
+              "src_hp_coil": "Diagnostic.",
+              "src_hp_exhaust": "Diagnostic.",
+              "src_hp_ipm": "Diagnostic.",
+              "src_hp_fan": "Diagnostic.",
+              "src_hp_eev": "Diagnostic.",
+              "src_hp_compressor_current": "Diagnostic.",
+              "src_circulation_power": "Power on the meter phase that carries only the circulation pump.",
+              "src_water_ph": "The pH value the dashboards show (the corrected one).",
+              "src_water_orp": "Source for the ORP value.",
+              "src_water_tds": "Source for TDS, if you have one.",
+              "src_ondilo_temperature": "The Ondilo's water temperature. Display only; it updates hourly and no rule uses it.",
+              "src_ondilo_battery": "Source for the Ondilo's battery level."
+            }
           }
         }
       },
@@ -244,6 +282,44 @@
               "watchdog": "Check regularly that the heat pump runs while the water is cold.",
               "notifications": "Send alerts to the notification service.",
               "fault_status": "Show Fejl as the status while a heat pump failure is open."
+            }
+          },
+          "sources": {
+            "name": "Data sources",
+            "description": "The values gathered on the Udespa device. Leave a field empty for no copy.",
+            "data": {
+              "src_hp_outlet": "Heat pump outlet temperature",
+              "src_hp_compressor": "Heat pump compressor",
+              "src_hp_ambient": "Heat pump ambient temperature",
+              "src_hp_coil": "Heat pump coil temperature",
+              "src_hp_exhaust": "Heat pump exhaust temperature",
+              "src_hp_ipm": "Heat pump IPM temperature",
+              "src_hp_fan": "Heat pump fan speed",
+              "src_hp_eev": "Heat pump EEV step",
+              "src_hp_compressor_current": "Heat pump compressor current",
+              "src_circulation_power": "Circulation power",
+              "src_water_ph": "Water pH",
+              "src_water_orp": "Water ORP",
+              "src_water_tds": "Water TDS",
+              "src_ondilo_temperature": "Ondilo temperature",
+              "src_ondilo_battery": "Ondilo battery"
+            },
+            "data_description": {
+              "src_hp_outlet": "Source for the heat pump's outlet temperature. Also used for the temperature rise.",
+              "src_hp_compressor": "Source for the compressor strength.",
+              "src_hp_ambient": "Source for the air temperature at the heat pump.",
+              "src_hp_coil": "Diagnostic.",
+              "src_hp_exhaust": "Diagnostic.",
+              "src_hp_ipm": "Diagnostic.",
+              "src_hp_fan": "Diagnostic.",
+              "src_hp_eev": "Diagnostic.",
+              "src_hp_compressor_current": "Diagnostic.",
+              "src_circulation_power": "Power on the meter phase that carries only the circulation pump.",
+              "src_water_ph": "The pH value the dashboards show (the corrected one).",
+              "src_water_orp": "Source for the ORP value.",
+              "src_water_tds": "Source for TDS, if you have one.",
+              "src_ondilo_temperature": "The Ondilo's water temperature. Display only; it updates hourly and no rule uses it.",
+              "src_ondilo_battery": "Source for the Ondilo's battery level."
             }
           }
         }

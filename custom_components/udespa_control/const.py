@@ -187,7 +187,7 @@ DEFAULTS: Final[dict[str, Any]] = {
 SECTION_ENTITIES: Final = "entities"
 SECTION_NUMBERS: Final = "numbers"
 SECTION_TOGGLES: Final = "toggles"
-ALL_SECTIONS: Final = (SECTION_ENTITIES, SECTION_NUMBERS, SECTION_TOGGLES)
+ALL_SECTIONS: Final = (SECTION_ENTITIES, SECTION_NUMBERS, SECTION_TOGGLES, SECTION_SOURCES)
 
 # --- Fixed timings (measured; not settings) -----------------------------------
 VERIFY_POLL_S: Final = 15  # one verification step; retry window / 15 = attempts
