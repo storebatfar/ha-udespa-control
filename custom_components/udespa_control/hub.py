@@ -63,6 +63,14 @@ def _usable(state: State | None) -> bool:
     return state is not None and state.state not in _INVALID
 
 
+def _as_number(value: Any) -> int | float | None:
+    """A source's number, kept whole when the source reports a whole number."""
+    number = as_float(value)
+    if number is not None and isinstance(value, str) and value.lstrip("-").isdigit():
+        return int(number)
+    return number
+
+
 def _source(key: str) -> Callable[[Settings], str | None]:
     return lambda settings: settings.sources.get(key)
 
@@ -166,7 +174,7 @@ class HubCopySensor(_SourceFollower, SensorEntity):
         self._attr_native_unit_of_measurement = attrs.get("unit_of_measurement")
         self._attr_device_class = _device_class(attrs.get("device_class"))
         self._attr_state_class = _state_class(attrs.get("state_class"))
-        value = as_float(state.state)
+        value = _as_number(state.state)
         if copy.power:
             unit = self._attr_native_unit_of_measurement
             if value is not None and unit in PowerConverter.VALID_UNITS:
@@ -201,7 +209,11 @@ class HubDemandSensor(_SourceFollower, SensorEntity):
 
 
 class HubRiseSensor(_SourceFollower, SensorEntity):
-    """Outlet minus inlet: is the heat pump actually warming the water?"""
+    """Outlet minus inlet: is the heat pump actually warming the water?
+
+    Only while circulation runs: with no flow the inlet sensor reads standing
+    water and the difference means nothing.
+    """
 
     _attr_native_unit_of_measurement = UnitOfTemperature.CELSIUS
     _attr_state_class = SensorStateClass.MEASUREMENT
@@ -209,7 +221,8 @@ class HubRiseSensor(_SourceFollower, SensorEntity):
 
     def __init__(self, controller: UdespaController, outlet: str) -> None:
         super().__init__(controller, RISE_KEY)
-        self._sources = (controller.settings.heat_pump, outlet)
+        settings = controller.settings
+        self._sources = (settings.heat_pump, outlet, settings.circulation)
 
     def _refresh(self) -> None:
         heat_pump = self.hass.states.get(self._sources[0])
@@ -220,7 +233,9 @@ class HubRiseSensor(_SourceFollower, SensorEntity):
             else None
         )
         outlet_c = as_float(outlet.state) if _usable(outlet) else None
-        rise = temperature_rise(inlet_c, outlet_c)
+        circulation = self.hass.states.get(self._sources[2])
+        flowing = circulation is not None and circulation.state == STATE_ON
+        rise = temperature_rise(inlet_c, outlet_c) if flowing else None
         self._attr_available = rise is not None
         self._attr_native_value = rise
 
