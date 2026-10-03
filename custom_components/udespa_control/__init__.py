@@ -47,13 +47,16 @@ async def async_remove_entry(hass: HomeAssistant, entry: UdespaConfigEntry) -> N
 
 
 async def async_migrate_entry(hass: HomeAssistant, entry: UdespaConfigEntry) -> bool:
-    """v1 → v2: fill the new data sources with today's entities that exist.
+    """1.1 → 1.2: fill the new data sources with today's entities that exist.
 
     Looks in the entity registry as well as the state machine: at HA start the
     source integrations may not have loaded yet, so their states can be missing.
-    A source already chosen is never overwritten.
+    A source already chosen is never overwritten. A minor bump, so 2026.10.1
+    still loads the entry after a rollback; a future major version is refused.
     """
-    if entry.version == 1:
+    if entry.version > 1:
+        return False
+    if entry.minor_version < 2:
         registry = er.async_get(hass)
         found = {
             key: entity_id
@@ -62,6 +65,6 @@ async def async_migrate_entry(hass: HomeAssistant, entry: UdespaConfigEntry) -> 
             or hass.states.get(entity_id) is not None
         }
         hass.config_entries.async_update_entry(
-            entry, data={**found, **entry.data}, version=2
+            entry, data={**found, **entry.data}, minor_version=2
         )
     return True

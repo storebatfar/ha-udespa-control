@@ -7,6 +7,7 @@ up in "Seneste handling".
 
 from __future__ import annotations
 
+import math
 from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import datetime, timedelta
@@ -361,7 +362,8 @@ def temperature_rise(inlet: float | None, outlet: float | None) -> float | None:
 
 
 def round_power(value: float | None) -> int | None:
-    return None if value is None else round(value)
+    """Whole watts, halves rounded up (Python's round() goes to even)."""
+    return None if value is None else math.floor(value + 0.5)
 
 
 def demand_label(action: Any) -> str | None:

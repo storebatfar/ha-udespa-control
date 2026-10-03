@@ -171,7 +171,8 @@ async def test_user_flow_stores_sources_and_drops_empty_ones(hass: HomeAssistant
         )
     assert result["data"][CONF_SRC_HP_OUTLET] == "sensor.outlet"
     assert CONF_SRC_WATER_TDS not in result["data"]
-    assert result["result"].version == 2
+    # A minor bump: 2026.10.1 can still load the entry after a rollback.
+    assert (result["result"].version, result["result"].minor_version) == (1, 2)
 
 
 async def test_first_setup_suggests_todays_sources(hass: HomeAssistant, tub: FakeTub):
@@ -187,7 +188,7 @@ async def test_first_setup_suggests_todays_sources(hass: HomeAssistant, tub: Fak
 async def test_reconfigure_keeps_the_sources(hass: HomeAssistant, tub: FakeTub):
     entry = MockConfigEntry(
         domain=DOMAIN,
-        version=2,
+        minor_version=2,
         title="Udespa",
         unique_id=SPA,
         data={**ENTITY_DATA, CONF_SRC_HP_OUTLET: "sensor.outlet"},
@@ -220,7 +221,7 @@ async def test_migration_finds_sources_in_the_registry(hass: HomeAssistant, tub:
     entry.add_to_hass(hass)
     with patch(SETUP, return_value=True):
         assert await hass.config_entries.async_setup(entry.entry_id)
-    assert entry.version == 2
+    assert (entry.version, entry.minor_version) == (1, 2)
     assert entry.data[CONF_SRC_HP_OUTLET] == "sensor.udespa_varmepumpe_outlet_temperature"
     assert entry.data[CONF_SRC_ONDILO_BATTERY] == "sensor.udespa_batteri"
     assert CONF_SRC_WATER_PH not in entry.data  # neither in the registry nor in states
@@ -253,3 +254,15 @@ def test_split_drops_empty_sources():
     )
     assert data[CONF_SRC_HP_OUTLET] == "sensor.outlet"
     assert CONF_SRC_WATER_TDS not in data
+
+
+async def test_an_entry_from_a_future_major_version_is_refused(hass: HomeAssistant, tub: FakeTub):
+    from homeassistant.config_entries import ConfigEntryState
+
+    entry = MockConfigEntry(
+        domain=DOMAIN, version=2, title="Udespa", unique_id=SPA, data=ENTITY_DATA, options=dict(DEFAULTS)
+    )
+    entry.add_to_hass(hass)
+    with patch(SETUP, return_value=True):
+        assert not await hass.config_entries.async_setup(entry.entry_id)
+    assert entry.state is ConfigEntryState.MIGRATION_ERROR

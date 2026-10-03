@@ -133,8 +133,8 @@ async def test_copy_follows_a_unit_change(hass: HomeAssistant, tub: FakeTub, ent
     hass.states.async_set(HP_POWER, "1.2345", {"unit_of_measurement": "kW", "device_class": "power"})
     await settle(hass)
     power = state(hass, entry, "sensor", "hp_power")
-    assert power.attributes["unit_of_measurement"] == "kW"
-    assert power.state == "1"
+    assert power.attributes["unit_of_measurement"] == "W"  # converted, not rounded to whole kW
+    assert power.state == "1235"
 
 
 async def test_temperature_rise(hass: HomeAssistant, entry):

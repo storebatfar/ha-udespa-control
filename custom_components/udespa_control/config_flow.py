@@ -231,7 +231,10 @@ def validate(
 
 
 class UdespaControlConfigFlow(ConfigFlow, domain=DOMAIN):
-    VERSION = 2
+    # Additive changes bump MINOR_VERSION only, so an older release still loads
+    # the entry after a rollback.
+    VERSION = 1
+    MINOR_VERSION = 2
 
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None

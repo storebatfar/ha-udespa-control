@@ -25,10 +25,12 @@ from homeassistant.const import (
     STATE_UNAVAILABLE,
     STATE_UNKNOWN,
     EntityCategory,
+    UnitOfPower,
     UnitOfTemperature,
 )
 from homeassistant.core import Event, EventStateChangedData, State, callback
 from homeassistant.helpers.event import async_track_state_change_event
+from homeassistant.util.unit_conversion import PowerConverter
 
 from .const import (
     CONF_SRC_CIRCULATION_POWER,
@@ -165,7 +167,17 @@ class HubCopySensor(_SourceFollower, SensorEntity):
         self._attr_device_class = _device_class(attrs.get("device_class"))
         self._attr_state_class = _state_class(attrs.get("state_class"))
         value = as_float(state.state)
-        self._attr_native_value = round_power(value) if copy.power else value
+        if copy.power:
+            unit = self._attr_native_unit_of_measurement
+            if value is not None and unit in PowerConverter.VALID_UNITS:
+                # Whole watts whatever the meter reports in, so a kW meter
+                # doesn't round to whole kilowatts.
+                # round(…, 6): 1.2345 kW is 1234.4999… W in floating point.
+                value = round(PowerConverter.convert(value, unit, UnitOfPower.WATT), 6)
+                self._attr_native_unit_of_measurement = UnitOfPower.WATT
+                self._attr_device_class = SensorDeviceClass.POWER
+            value = round_power(value)
+        self._attr_native_value = value
 
 
 class HubDemandSensor(_SourceFollower, SensorEntity):

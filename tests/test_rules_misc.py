@@ -257,6 +257,8 @@ def test_temperature_rise():
 def test_round_power():
     assert round_power(1234.6) == 1235
     assert round_power(7.481) == 7
+    assert round_power(1234.5) == 1235  # half up, not Python's half-to-even
+    assert round_power(2.5) == 3
     assert round_power(None) is None
 
 
