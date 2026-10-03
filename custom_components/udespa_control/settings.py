@@ -45,6 +45,7 @@ from .const import (
     OPT_WATCHDOG,
     OPT_WATCHDOG_CIRCULATION,
     OPT_WATCHDOG_INTERVAL,
+    SOURCE_KEYS,
     VERIFY_POLL_S,
     Mode,
 )
@@ -86,6 +87,7 @@ class Settings:
     watchdog: bool
     notifications: bool
     fault_status: bool
+    sources: Mapping[str, str]
 
     @property
     def verify_attempts(self) -> int:
@@ -134,4 +136,5 @@ class Settings:
             watchdog=bool(o[OPT_WATCHDOG]),
             notifications=bool(o[OPT_NOTIFICATIONS]),
             fault_status=bool(o[OPT_FAULT_STATUS]),
+            sources={key: data[key] for key in SOURCE_KEYS if data.get(key)},
         )
