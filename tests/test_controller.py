@@ -444,3 +444,35 @@ async def test_state_survives_a_restart(hass: HomeAssistant, tub: FakeTub, make_
     assert second.state.active is True
     assert second.timer_reset_at(Timer.FILTER) is not None
     assert timedelta(0) <= dt_util.utcnow() - second.timer_reset_at(Timer.FILTER)
+
+
+async def test_watchdog_waits_while_a_heat_job_is_verifying(
+    hass: HomeAssistant, freezer: FrozenDateTimeFactory, tub: FakeTub, make_controller
+):
+    """Setpoint raised late in a long filter cycle: the tick lands mid compressor start."""
+    controller = await make_controller()
+    tub.spa(temperature=35.0)
+    tub.circulation(True)
+    await advance(hass, freezer, 590, step=10)
+    tub.spa(action="heating")
+    await advance(hass, freezer, 20, step=5)
+    tub.hp_power(1500)
+    await advance(hass, freezer, 200, step=10)
+    assert tub.heater_commands() == []
+    assert tub.notifications() == []
+    assert not controller.failure_open
+
+
+async def test_frost_crossing_during_the_backup_check_keeps_the_heater_on(
+    hass: HomeAssistant, freezer: FrozenDateTimeFactory, tub: FakeTub, make_controller
+):
+    await make_controller()
+    tub.spa(temperature=35.0)
+    tub.circulation(True)
+    await advance(hass, freezer, 600, step=10)
+    assert tub.heater_commands() == ["on"]  # the watchdog's backup
+    tub.outdoor(4.0)
+    await settle(hass)
+    tub.outdoor(6.0)
+    await advance(hass, freezer, 150, step=10)
+    assert "off" not in tub.heater_commands()

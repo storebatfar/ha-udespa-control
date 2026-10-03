@@ -65,6 +65,12 @@ class HeatPump:
         self._set_failure = set_failure
         self._job: asyncio.Task[None] | None = None
         self._watchdog: asyncio.Task[None] | None = None
+        self._backups = 0
+
+    @property
+    def backup_running(self) -> bool:
+        """A backup is between switching the heater on and its check."""
+        return self._backups > 0
 
     @property
     def busy(self) -> bool:
@@ -115,15 +121,15 @@ class HeatPump:
 
     async def _async_on(self, reason: str) -> None:
         for attempt in range(self._s.verify_attempts):
-            if self._running():
-                if attempt == 0:
-                    self._record(f"Varmepumpe kører allerede: {reason}")
-                await self.async_recover()
-                return
+            # Command before verification: power alone can't prove "running",
+            # because the compressor draws power for ~69 s after an "off".
             if attempt == 0 or self._reader.hp_hvac_mode() != "heat":
                 await self._actuators.heat_pump_mode(
                     "heat", self._attempt_reason(reason, attempt)
                 )
+            if self._running():
+                await self.async_recover()
+                return
             await async_sleep(self._hass, VERIFY_POLL_S)
 
         if self._running():
@@ -181,11 +187,23 @@ class HeatPump:
 
     async def async_backup(self, kind: BackupKind) -> None:
         """A5 action: heater on, check it after a while, alert once, mark failure."""
+        self._backups += 1
+        try:
+            await self._async_backup(kind)
+        finally:
+            self._backups -= 1
+
+    async def _async_backup(self, kind: BackupKind) -> None:
         if self._s.backup_heater:
             await self._actuators.heater(
                 True, "backup: varmepumpen kører ikke, og vandet er under setpunkt"
             )
         await async_sleep(self._hass, self._s.backup_check_s)
+        if self._running():
+            # The compressor came up during the check: no failure after all.
+            self._record("Backup: varmepumpen kører alligevel")
+            await self.async_recover()
+            return
         if not self._failure_open():
             title, message = backup_alert(
                 kind,

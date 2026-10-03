@@ -484,7 +484,7 @@ class UdespaController:
                 ),
                 "frost",
             )
-        elif self.state.failure_open:
+        elif self.state.failure_open or self.heat_pump.backup_running:
             self.record(
                 f"Frostsikring: {outside}, men varmelegemet bliver tændt som backup "
                 "for varmepumpen"
@@ -529,7 +529,9 @@ class UdespaController:
     def _watchdog_tick(self, now: datetime) -> None:
         """A6."""
         s = self.settings
-        if not s.watchdog:
+        # A running on/head-start job owns verification and has its own A5;
+        # ticking now would catch a healthy compressor mid-start.
+        if not s.watchdog or self.heat_pump.busy:
             return
         if watchdog_should_act(
             failure_open=self.state.failure_open,

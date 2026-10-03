@@ -98,7 +98,7 @@ async def test_on_job_sends_first_even_if_the_entity_already_says_heat(
     assert tub.hp_modes() == ["heat"]
 
 
-async def test_already_running_sends_nothing_and_recovers(
+async def test_already_running_still_gets_heat_and_recovers(
     hass: HomeAssistant, tub: FakeTub, harness
 ):
     tub.hp_power(1500)
@@ -108,7 +108,7 @@ async def test_already_running_sends_nothing_and_recovers(
     h.failure = True
     h.hp.start(ON)
     await settle(hass)
-    assert tub.hp_modes() == []
+    assert tub.hp_modes() == ["heat"]
     assert h.failure is False
     assert tub.heater_commands() == ["off"]
 
@@ -396,3 +396,38 @@ async def test_shutdown_cancels_everything(hass: HomeAssistant, tub: FakeTub, ha
     await settle(hass)
     await h.hp.async_shutdown()
     assert not h.hp.busy
+
+
+async def test_a_call_during_the_soft_stop_still_sends_heat(
+    hass: HomeAssistant, tub: FakeTub, harness
+):
+    """After "off" the compressor draws power for ~69 s; that is not "running"."""
+    tub.hp_power(1500)
+    h = harness()
+    h.hp.start(ON)
+    await settle(hass)
+    assert tub.hp_modes() == ["heat"]
+
+
+async def test_backup_stands_down_if_the_pump_starts_during_the_check(
+    hass: HomeAssistant, freezer: FrozenDateTimeFactory, tub: FakeTub, harness
+):
+    tub.spa(temperature=35.0)
+    h = harness()
+    h.hp.start_watchdog_backup("varmepumpen trækker ikke strøm")
+    await advance(hass, freezer, 60)
+    tub.hp_power(1500)
+    await advance(hass, freezer, 100, step=5)
+    assert tub.notifications() == []
+    assert h.failure is False
+
+
+async def test_backup_running_is_visible_during_the_check(
+    hass: HomeAssistant, freezer: FrozenDateTimeFactory, tub: FakeTub, harness
+):
+    h = harness()
+    h.hp.start_watchdog_backup("varmepumpen trækker ikke strøm")
+    await advance(hass, freezer, 60)
+    assert h.hp.backup_running
+    await advance(hass, freezer, 100, step=5)
+    assert not h.hp.backup_running
