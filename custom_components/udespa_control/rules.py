@@ -1,0 +1,226 @@
+"""Pure decision rules.
+
+No Home Assistant imports: every rule is a function of plain values, so the
+whole rulebook is unit-tested without HA. Reasons are Danish because they end
+up in "Seneste handling".
+"""
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+from datetime import timedelta
+
+from .const import SPA_CALLING, BackupKind, HeatAction, Status, Trigger
+
+
+@dataclass(frozen=True)
+class SpaView:
+    """What the heat-pump rules need to know about the spa right now."""
+
+    circulation: bool
+    hvac_action: str | None
+    temperature: float | None
+    setpoint: float | None
+    status: Status
+
+
+@dataclass(frozen=True)
+class Decision:
+    action: HeatAction
+    reason: str
+
+
+def fmt_c(value: float) -> str:
+    """37.5 -> '37,5'."""
+    return f"{value:.1f}".replace(".", ",")
+
+
+def fmt_num(value: float) -> str:
+    """4.0 -> '4', 2.5 -> '2,5'."""
+    if float(value).is_integer():
+        return str(int(value))
+    return f"{value:g}".replace(".", ",")
+
+
+def _head_start_allowed(spa: SpaView, head_start: bool) -> bool:
+    return (
+        head_start
+        and spa.circulation
+        and spa.status is Status.IN_USE
+        and spa.hvac_action == "off"
+    )
+
+
+def heat_decision(
+    trigger: Trigger,
+    spa: SpaView,
+    *,
+    head_start: bool,
+    previous_action: str | None = None,
+) -> Decision | None:
+    """A1-A3 and A8: what the heat pump should do after this trigger.
+
+    None means "no decision", and the caller must then leave any running job
+    alone: a trigger that leads nowhere must not cancel a retry loop.
+    """
+    calling = spa.hvac_action in SPA_CALLING
+
+    if trigger is Trigger.SPA_HEATING:
+        # The second "heating" after the 90 s "idle" flow check is the same call.
+        if previous_action == "idle" or not spa.circulation:
+            return None
+        return Decision(HeatAction.ON, "spaen kalder på varme")
+
+    if trigger is Trigger.CIRCULATION_ON:
+        if not spa.circulation:
+            return None
+        if calling:
+            return Decision(HeatAction.ON, "cirkulation startet, og spaen kalder på varme")
+        if head_start and spa.status is Status.IN_USE:
+            return Decision(HeatAction.HEAD_START, "hurtigstart: cirkulation startet i I brug")
+        return None
+
+    if trigger is Trigger.CIRCULATION_OFF:
+        return Decision(HeatAction.OFF, "cirkulationen er stoppet")
+
+    if trigger is Trigger.SPA_SATISFIED:
+        if (
+            spa.circulation
+            and spa.temperature is not None
+            and spa.setpoint is not None
+            and spa.temperature >= spa.setpoint
+        ):
+            return Decision(
+                HeatAction.OFF, f"spaen er varm nok ({fmt_c(spa.temperature)} °C)"
+            )
+        return None
+
+    if trigger is Trigger.IN_USE:
+        if _head_start_allowed(spa, head_start):
+            return Decision(
+                HeatAction.HEAD_START, "hurtigstart: status blev I brug under cirkulation"
+            )
+        return None
+
+    # Trigger.STARTUP
+    if spa.circulation and calling:
+        return Decision(HeatAction.ON, "opstart: spaen kalder på varme")
+    if _head_start_allowed(spa, head_start):
+        return Decision(HeatAction.HEAD_START, "opstart: hurtigstart i I brug")
+    return Decision(HeatAction.OFF, "opstart: intet varmekald")
+
+
+def heat_pump_running(power: float | None, on_w: float) -> bool:
+    return power is not None and power > on_w
+
+
+def heat_pump_stopped(power: float | None, off_w: float) -> bool:
+    """Unknown power is not "stopped": the off job keeps verifying."""
+    return power is not None and power < off_w
+
+
+def heater_running(power: float | None, on_w: float) -> bool:
+    return power is not None and power > on_w
+
+
+def backup_needed(
+    temperature: float | None, setpoint: float | None, margin: float
+) -> bool:
+    """A5 gate. Low power alone means "failed" OR "done"; only cold water is failure."""
+    return (
+        temperature is not None
+        and setpoint is not None
+        and temperature < setpoint - margin
+    )
+
+
+def watchdog_should_act(
+    *,
+    failure_open: bool,
+    circulation_on_for: timedelta | None,
+    min_circulation: timedelta,
+    temperature: float | None,
+    setpoint: float | None,
+    margin: float,
+    hp_power: float | None,
+    on_w: float,
+) -> bool:
+    """A6. circulation_on_for is None while circulation is off."""
+    return (
+        not failure_open
+        and circulation_on_for is not None
+        and circulation_on_for >= min_circulation
+        and backup_needed(temperature, setpoint, margin)
+        and hp_power is not None
+        and hp_power < on_w
+    )
+
+
+_NO_HEAT_SOURCE_TITLE = "⚠️ Udespa uden varmekilde"
+_HP_TITLE = "Udespa Varmepumpe"
+_HP_WARNING_TITLE = "⚠️ Udespa Varmepumpe"
+
+
+def backup_alert(
+    kind: BackupKind,
+    *,
+    heater_running: bool,
+    backup_enabled: bool,
+    retry_minutes: float,
+    circulation_minutes: float,
+) -> tuple[str, str]:
+    """(title, message) after the backup check. Texts are today's automations'."""
+    if not backup_enabled:
+        return (
+            _HP_WARNING_TITLE,
+            ("Varmepumpen kom ikke i drift, og vandet er under setpunkt. "
+            "Backup-varmelegemet er slået fra i Udespa Control."),
+        )
+    if kind is BackupKind.RETRY:
+        if heater_running:
+            return (
+                _HP_TITLE,
+                (f"Varmepumpen kom ikke i drift inden for {fmt_num(retry_minutes)} "
+                "minutter, og vandet er under setpunkt. Varmelegemet er tændt som "
+                "backup og trækker strøm."),
+            )
+        return (
+            _NO_HEAT_SOURCE_TITLE,
+            ("Varmepumpen kom ikke i drift, vandet er under setpunkt, og varmelegemet "
+            "trækker heller ikke strøm. Spaen har ingen varmekilde — tjek den."),
+        )
+    if heater_running:
+        return (
+            _HP_TITLE,
+            (f"Varmepumpen trækker ikke strøm efter {fmt_num(circulation_minutes)}+ "
+            "minutters cirkulation, og vandet er under setpunkt. Varmelegemet er "
+            "tændt som backup og trækker strøm."),
+        )
+    return (
+        _NO_HEAT_SOURCE_TITLE,
+        ("Varmepumpen trækker ikke strøm, vandet er under setpunkt, og varmelegemet "
+        "trækker heller ikke strøm. Spaen har ingen varmekilde — tjek den."),
+    )
+
+
+def off_failed_alert(*, circulation: bool, retry_minutes: float) -> tuple[str, str]:
+    minutes = fmt_num(retry_minutes)
+    if circulation:
+        return (
+            _HP_WARNING_TITLE,
+            (f"Spaen er varm nok, men varmepumpen kunne ikke slukkes inden for "
+            f"{minutes} minutter og trækker stadig strøm på L3."),
+        )
+    return (
+        _HP_WARNING_TITLE,
+        (f"Varmepumpen kunne ikke slukkes inden for {minutes} minutter og trækker "
+        "stadig strøm på L3. Cirkulationspumpen er stoppet, så varmepumpen kører "
+        "uden vandcirkulation."),
+    )
+
+
+HEAD_START_OFF_FAILED_ALERT: tuple[str, str] = (
+    _HP_WARNING_TITLE,
+    ("Hurtigstart: spaen kaldte ikke på varme, men varmepumpen kunne ikke slukkes "
+    "igen og trækker strøm på L3."),
+)
