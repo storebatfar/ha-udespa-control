@@ -28,6 +28,19 @@ do appears in **Last action** prefixed `(kun overvågning)`; nothing is sent to 
 pump, heater or spa, and no alerts go out. Buttons and a manual mode pick still act.
 Switch Active control on when the decisions match what you expect.
 
+## The data hub
+
+The Udespa device gathers the tub's data in one place: water temperature, setpoint,
+heat demand and circulation; heat-pump inlet, outlet, temperature rise, compressor,
+power and ambient (plus diagnostics); heater and circulation power; water quality
+from the Ondilo. Each copy follows a source chosen under Configure → Datakilder;
+an empty field means no copy.
+
+**Varmepumpe offset** (0 / 0.5 / 1.0 °C) adds a little extra: the heat pump's target
+is the spa setpoint plus the offset, capped at the heat pump's maximum.
+**Temperatursynk** shows whether the heat pump's target matches (`I sync`), differs
+(`Afviger`) or can't be read (`Ukendt`).
+
 ## The rules
 
 Every rule is a pure function in `custom_components/udespa_control/rules.py`, documented
