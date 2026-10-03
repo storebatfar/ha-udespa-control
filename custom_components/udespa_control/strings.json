@@ -1,0 +1,323 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Udespa Control",
+        "description": "Pick the devices and check the numbers. Active control starts off, so the integration only watches until you switch it on.",
+        "sections": {
+          "entities": {
+            "name": "Entities",
+            "description": "The devices Udespa Control works through. It never talks to hardware directly.",
+            "data": {
+              "spa": "Spa",
+              "circulation": "Circulation pump",
+              "filter_cycle_1": "Filter cycle 1",
+              "filter_cycle_2": "Filter cycle 2",
+              "heat_pump": "Heat pump",
+              "heat_pump_power": "Heat pump power",
+              "heater": "Heater",
+              "heater_power": "Heater power",
+              "outdoor": "Outdoor temperature",
+              "outdoor_attribute": "Outdoor temperature attribute",
+              "cleaning_pump": "Cleaning pump",
+              "notify": "Notification service"
+            },
+            "data_description": {
+              "spa": "The spa's climate entity. Its current temperature and setpoint drive every rule.",
+              "circulation": "On while the spa circulates water. The heat pump may only run while it is on.",
+              "filter_cycle_1": "Optional. Only used to name the cycle in Last action.",
+              "filter_cycle_2": "Optional. Only used to name the cycle in Last action.",
+              "heat_pump": "The heat pump's climate entity. Its own state is never trusted; power confirms it.",
+              "heat_pump_power": "Power on the meter phase that carries only the heat pump.",
+              "heater": "The switch for the electric heater, used for frost protection and as backup.",
+              "heater_power": "Power on the meter phase that carries only the heater.",
+              "outdoor": "Entity holding the outdoor temperature, in its state or in the attribute below.",
+              "outdoor_attribute": "Leave empty to use the entity's state.",
+              "cleaning_pump": "The pump that runs the pipe-cleaning cycles.",
+              "notify": "For example notify.mobile_app_thomas_iphone_15."
+            }
+          },
+          "numbers": {
+            "name": "Numbers",
+            "description": "Timings, thresholds and presets. The defaults are today's measured values.",
+            "data": {
+              "off_delay_s": "Switch-off delay after heat call",
+              "head_start_timeout_s": "Head start timeout",
+              "heat_pump_on_w": "Heat pump running above",
+              "heat_pump_off_w": "Heat pump stopped below",
+              "retry_minutes": "Retry window",
+              "backup_margin_c": "Backup: margin below setpoint",
+              "backup_check_s": "Backup: check the heater after",
+              "heater_on_w": "Heater running above",
+              "watchdog_interval_min": "Watchdog: interval",
+              "watchdog_circulation_min": "Watchdog: circulation at least",
+              "frost_limit_c": "Frost limit",
+              "in_use_threshold_c": "In use above rest temperature",
+              "cleaning_max_min": "Cleaning: maximum per cycle",
+              "cleaning_estimate_min": "Cleaning: display estimate",
+              "preset_quiet": "Preset for Lydløs",
+              "preset_smart": "Preset for Smart",
+              "preset_turbo": "Preset for Turbo"
+            },
+            "data_description": {
+              "off_delay_s": "How long the spa must report off before the heat pump is switched off.",
+              "head_start_timeout_s": "Head start switches the heat pump off again if no heat call arrives within this time. Keep it below the compressor's start (85–96 s).",
+              "heat_pump_on_w": "Power that confirms the heat pump is running.",
+              "heat_pump_off_w": "Power that confirms the heat pump has stopped. Must be lower than the running threshold.",
+              "retry_minutes": "How long a switch-on or switch-off is retried and verified before it counts as failed.",
+              "backup_margin_c": "The backup heater only steps in when the water is this far below the setpoint.",
+              "backup_check_s": "How long after switching the heater on its power is checked for the alert.",
+              "heater_on_w": "Power that confirms the heater is heating.",
+              "watchdog_interval_min": "How often the watchdog checks the heat pump.",
+              "watchdog_circulation_min": "The watchdog only acts after circulation has run this long.",
+              "frost_limit_c": "Frost protection switches the heater on below this outdoor temperature and off above it.",
+              "in_use_threshold_c": "Status is I brug when the setpoint is more than this above the rest temperature.",
+              "cleaning_max_min": "Backstop if the spa never stops the cleaning pump itself (it normally does after 15 min).",
+              "cleaning_estimate_min": "Shown to dashboards as the expected cycle length.",
+              "preset_quiet": "The heat pump's preset for the Lydløs mode.",
+              "preset_smart": "The heat pump's preset for the Smart mode.",
+              "preset_turbo": "The heat pump's preset for the Turbo mode."
+            }
+          },
+          "toggles": {
+            "name": "On/off",
+            "description": "Switch individual rules on or off.",
+            "data": {
+              "head_start": "Head start in I brug",
+              "backup_heater": "Backup heater on failure",
+              "watchdog": "Watchdog",
+              "notifications": "Notifications",
+              "fault_status": "Status Fejl on heat pump failure"
+            },
+            "data_description": {
+              "head_start": "Switch the heat pump on when circulation starts in I brug, before the spa calls for heat.",
+              "backup_heater": "Switch the heater on when the heat pump fails and the water is cold.",
+              "watchdog": "Check regularly that the heat pump runs while the water is cold.",
+              "notifications": "Send alerts to the notification service.",
+              "fault_status": "Show Fejl as the status while a heat pump failure is open."
+            }
+          }
+        }
+      },
+      "reconfigure": {
+        "title": "Swap devices",
+        "description": "Change the devices without losing entity IDs or stored state.",
+        "sections": {
+          "entities": {
+            "name": "Entities",
+            "description": "The devices Udespa Control works through. It never talks to hardware directly.",
+            "data": {
+              "spa": "Spa",
+              "circulation": "Circulation pump",
+              "filter_cycle_1": "Filter cycle 1",
+              "filter_cycle_2": "Filter cycle 2",
+              "heat_pump": "Heat pump",
+              "heat_pump_power": "Heat pump power",
+              "heater": "Heater",
+              "heater_power": "Heater power",
+              "outdoor": "Outdoor temperature",
+              "outdoor_attribute": "Outdoor temperature attribute",
+              "cleaning_pump": "Cleaning pump",
+              "notify": "Notification service"
+            },
+            "data_description": {
+              "spa": "The spa's climate entity. Its current temperature and setpoint drive every rule.",
+              "circulation": "On while the spa circulates water. The heat pump may only run while it is on.",
+              "filter_cycle_1": "Optional. Only used to name the cycle in Last action.",
+              "filter_cycle_2": "Optional. Only used to name the cycle in Last action.",
+              "heat_pump": "The heat pump's climate entity. Its own state is never trusted; power confirms it.",
+              "heat_pump_power": "Power on the meter phase that carries only the heat pump.",
+              "heater": "The switch for the electric heater, used for frost protection and as backup.",
+              "heater_power": "Power on the meter phase that carries only the heater.",
+              "outdoor": "Entity holding the outdoor temperature, in its state or in the attribute below.",
+              "outdoor_attribute": "Leave empty to use the entity's state.",
+              "cleaning_pump": "The pump that runs the pipe-cleaning cycles.",
+              "notify": "For example notify.mobile_app_thomas_iphone_15."
+            }
+          }
+        }
+      }
+    },
+    "error": {
+      "notify_not_found": "That notification service does not exist.",
+      "power_thresholds": "Heat pump stopped below must be lower than heat pump running above.",
+      "unknown_preset": "A preset is not one of the heat pump's presets."
+    },
+    "abort": {
+      "already_configured": "This spa is already set up.",
+      "reconfigure_successful": "The devices were changed."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Udespa Control settings",
+        "description": "Every setting on one screen. Saving reloads the integration.",
+        "sections": {
+          "entities": {
+            "name": "Entities",
+            "description": "The devices Udespa Control works through. It never talks to hardware directly.",
+            "data": {
+              "spa": "Spa",
+              "circulation": "Circulation pump",
+              "filter_cycle_1": "Filter cycle 1",
+              "filter_cycle_2": "Filter cycle 2",
+              "heat_pump": "Heat pump",
+              "heat_pump_power": "Heat pump power",
+              "heater": "Heater",
+              "heater_power": "Heater power",
+              "outdoor": "Outdoor temperature",
+              "outdoor_attribute": "Outdoor temperature attribute",
+              "cleaning_pump": "Cleaning pump",
+              "notify": "Notification service"
+            },
+            "data_description": {
+              "spa": "The spa's climate entity. Its current temperature and setpoint drive every rule.",
+              "circulation": "On while the spa circulates water. The heat pump may only run while it is on.",
+              "filter_cycle_1": "Optional. Only used to name the cycle in Last action.",
+              "filter_cycle_2": "Optional. Only used to name the cycle in Last action.",
+              "heat_pump": "The heat pump's climate entity. Its own state is never trusted; power confirms it.",
+              "heat_pump_power": "Power on the meter phase that carries only the heat pump.",
+              "heater": "The switch for the electric heater, used for frost protection and as backup.",
+              "heater_power": "Power on the meter phase that carries only the heater.",
+              "outdoor": "Entity holding the outdoor temperature, in its state or in the attribute below.",
+              "outdoor_attribute": "Leave empty to use the entity's state.",
+              "cleaning_pump": "The pump that runs the pipe-cleaning cycles.",
+              "notify": "For example notify.mobile_app_thomas_iphone_15."
+            }
+          },
+          "numbers": {
+            "name": "Numbers",
+            "description": "Timings, thresholds and presets. The defaults are today's measured values.",
+            "data": {
+              "off_delay_s": "Switch-off delay after heat call",
+              "head_start_timeout_s": "Head start timeout",
+              "heat_pump_on_w": "Heat pump running above",
+              "heat_pump_off_w": "Heat pump stopped below",
+              "retry_minutes": "Retry window",
+              "backup_margin_c": "Backup: margin below setpoint",
+              "backup_check_s": "Backup: check the heater after",
+              "heater_on_w": "Heater running above",
+              "watchdog_interval_min": "Watchdog: interval",
+              "watchdog_circulation_min": "Watchdog: circulation at least",
+              "frost_limit_c": "Frost limit",
+              "in_use_threshold_c": "In use above rest temperature",
+              "cleaning_max_min": "Cleaning: maximum per cycle",
+              "cleaning_estimate_min": "Cleaning: display estimate",
+              "preset_quiet": "Preset for Lydløs",
+              "preset_smart": "Preset for Smart",
+              "preset_turbo": "Preset for Turbo"
+            },
+            "data_description": {
+              "off_delay_s": "How long the spa must report off before the heat pump is switched off.",
+              "head_start_timeout_s": "Head start switches the heat pump off again if no heat call arrives within this time. Keep it below the compressor's start (85–96 s).",
+              "heat_pump_on_w": "Power that confirms the heat pump is running.",
+              "heat_pump_off_w": "Power that confirms the heat pump has stopped. Must be lower than the running threshold.",
+              "retry_minutes": "How long a switch-on or switch-off is retried and verified before it counts as failed.",
+              "backup_margin_c": "The backup heater only steps in when the water is this far below the setpoint.",
+              "backup_check_s": "How long after switching the heater on its power is checked for the alert.",
+              "heater_on_w": "Power that confirms the heater is heating.",
+              "watchdog_interval_min": "How often the watchdog checks the heat pump.",
+              "watchdog_circulation_min": "The watchdog only acts after circulation has run this long.",
+              "frost_limit_c": "Frost protection switches the heater on below this outdoor temperature and off above it.",
+              "in_use_threshold_c": "Status is I brug when the setpoint is more than this above the rest temperature.",
+              "cleaning_max_min": "Backstop if the spa never stops the cleaning pump itself (it normally does after 15 min).",
+              "cleaning_estimate_min": "Shown to dashboards as the expected cycle length.",
+              "preset_quiet": "The heat pump's preset for the Lydløs mode.",
+              "preset_smart": "The heat pump's preset for the Smart mode.",
+              "preset_turbo": "The heat pump's preset for the Turbo mode."
+            }
+          },
+          "toggles": {
+            "name": "On/off",
+            "description": "Switch individual rules on or off.",
+            "data": {
+              "head_start": "Head start in I brug",
+              "backup_heater": "Backup heater on failure",
+              "watchdog": "Watchdog",
+              "notifications": "Notifications",
+              "fault_status": "Status Fejl on heat pump failure"
+            },
+            "data_description": {
+              "head_start": "Switch the heat pump on when circulation starts in I brug, before the spa calls for heat.",
+              "backup_heater": "Switch the heater on when the heat pump fails and the water is cold.",
+              "watchdog": "Check regularly that the heat pump runs while the water is cold.",
+              "notifications": "Send alerts to the notification service.",
+              "fault_status": "Show Fejl as the status while a heat pump failure is open."
+            }
+          }
+        }
+      }
+    },
+    "error": {
+      "notify_not_found": "That notification service does not exist.",
+      "power_thresholds": "Heat pump stopped below must be lower than heat pump running above.",
+      "unknown_preset": "A preset is not one of the heat pump's presets."
+    }
+  },
+  "entity": {
+    "select": {
+      "heat_pump_mode": {
+        "name": "Heat pump mode"
+      }
+    },
+    "number": {
+      "rest_temperature": {
+        "name": "Rest temperature"
+      }
+    },
+    "button": {
+      "raise_temperature": {
+        "name": "Raise temperature"
+      },
+      "lower_temperature": {
+        "name": "Lower temperature"
+      },
+      "start_cleaning": {
+        "name": "Start cleaning"
+      },
+      "stop_cleaning": {
+        "name": "Stop cleaning"
+      },
+      "reset_filter_timer": {
+        "name": "Reset filter timer"
+      },
+      "reset_bath_water_timer": {
+        "name": "Reset bath water timer"
+      }
+    },
+    "switch": {
+      "frost_protection": {
+        "name": "Frost protection"
+      },
+      "active_control": {
+        "name": "Active control"
+      }
+    },
+    "sensor": {
+      "status": {
+        "name": "Status"
+      },
+      "cleaning_phase": {
+        "name": "Cleaning phase"
+      },
+      "filter_timer": {
+        "name": "Filter timer"
+      },
+      "bath_water_timer": {
+        "name": "Bath water timer"
+      },
+      "heating": {
+        "name": "Heating"
+      },
+      "last_action": {
+        "name": "Last action"
+      }
+    },
+    "binary_sensor": {
+      "heat_pump_failure": {
+        "name": "Heat pump failure"
+      }
+    }
+  }
+}
