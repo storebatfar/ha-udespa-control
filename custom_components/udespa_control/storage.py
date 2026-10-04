@@ -29,6 +29,7 @@ _DATETIME_FIELDS = (
     "cleaning_started_at",
     "filter_reset_at",
     "bath_water_reset_at",
+    "overtemp_since",
 )
 
 
@@ -45,6 +46,7 @@ class StoredState:
     cleaning_started_at: datetime | None = None
     filter_reset_at: datetime | None = None
     bath_water_reset_at: datetime | None = None
+    overtemp_since: datetime | None = None
 
     def to_dict(self) -> dict[str, Any]:
         data = asdict(self)
@@ -97,6 +99,7 @@ class StoredState:
             cleaning_started_at=_dt("cleaning_started_at"),
             filter_reset_at=_dt("filter_reset_at"),
             bath_water_reset_at=_dt("bath_water_reset_at"),
+            overtemp_since=_dt("overtemp_since"),
         )
 
 

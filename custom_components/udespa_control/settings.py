@@ -29,6 +29,7 @@ from .const import (
     OPT_CLEANING_ESTIMATE,
     OPT_CLEANING_MAX,
     OPT_FAULT_STATUS,
+    OPT_FILTER_STAY_ON,
     OPT_FROST_LIMIT,
     OPT_HEAD_START,
     OPT_HEAD_START_TIMEOUT,
@@ -40,6 +41,8 @@ from .const import (
     OPT_MODE_MAINTAINING,
     OPT_NOTIFICATIONS,
     OPT_OFF_DELAY,
+    OPT_OVERTEMP_MARGIN,
+    OPT_OVERTEMP_MINUTES,
     OPT_PRESET_QUIET,
     OPT_PRESET_SMART,
     OPT_PRESET_TURBO,
@@ -98,6 +101,9 @@ class Settings:
     watchdog: bool
     notifications: bool
     fault_status: bool
+    filter_stay_on: bool
+    overtemp_margin: float
+    overtemp_minutes: float
     sources: Mapping[str, str]
 
     @property
@@ -151,5 +157,8 @@ class Settings:
             watchdog=bool(o[OPT_WATCHDOG]),
             notifications=bool(o[OPT_NOTIFICATIONS]),
             fault_status=bool(o[OPT_FAULT_STATUS]),
+            filter_stay_on=bool(o[OPT_FILTER_STAY_ON]),
+            overtemp_margin=float(o[OPT_OVERTEMP_MARGIN]),
+            overtemp_minutes=float(o[OPT_OVERTEMP_MINUTES]),
             sources={key: data[key] for key in SOURCE_KEYS if data.get(key)},
         )

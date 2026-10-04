@@ -14,6 +14,7 @@ from custom_components.udespa_control.const import (
 )
 from custom_components.udespa_control.rules import (
     HEAD_START_OFF_FAILED_ALERT,
+    OVERTEMP_ALERT,
     SpaView,
     backup_alert,
     backup_needed,
@@ -24,6 +25,7 @@ from custom_components.udespa_control.rules import (
     heat_pump_stopped,
     heater_running,
     off_failed_alert,
+    overtemp,
     watchdog_should_act,
 )
 
@@ -298,3 +300,78 @@ def test_head_start_off_failed_alert_text():
         ("Hurtigstart: spaen kaldte ikke på varme, men varmepumpen kunne ikke "
         "slukkes igen og trækker strøm på L3."),
     )
+
+
+# --- Rule F: filter cycles ---------------------------------------------------
+
+
+def fspa(**changes) -> SpaView:
+    values = {
+        "circulation": True,
+        "hvac_action": "off",
+        "temperature": 37.0,
+        "setpoint": 37.0,
+        "status": Status.MAINTAINING,
+        "filter_cycle": True,
+    }
+    values.update(changes)
+    return SpaView(**values)
+
+
+def fact(trigger, view, stay=True, previous=None):
+    decision = heat_decision(
+        trigger, view, head_start=True, previous_action=previous, filter_stay_on=stay
+    )
+    return None if decision is None else decision.action
+
+
+def test_filter_start_with_circulation_switches_on():
+    assert fact(Trigger.FILTER_START, fspa()) is HeatAction.ON
+
+
+def test_filter_start_needs_circulation_the_toggle_and_a_cycle():
+    assert fact(Trigger.FILTER_START, fspa(circulation=False)) is None
+    assert fact(Trigger.FILTER_START, fspa(), stay=False) is None
+    assert fact(Trigger.FILTER_START, fspa(filter_cycle=False)) is None
+
+
+def test_satisfied_during_a_filter_cycle_never_switches_off():
+    assert fact(Trigger.SPA_SATISFIED, fspa(temperature=38.0)) is None
+
+
+def test_circulation_stop_still_switches_off_in_a_filter_cycle():
+    assert fact(Trigger.CIRCULATION_OFF, fspa(circulation=False)) is HeatAction.OFF
+
+
+def test_no_head_start_in_a_filter_cycle():
+    assert fact(Trigger.IN_USE, fspa(status=Status.IN_USE)) is None
+    assert fact(Trigger.CIRCULATION_ON, fspa(status=Status.IN_USE)) is HeatAction.ON
+
+
+def test_startup_mid_cycle_switches_on():
+    assert fact(Trigger.STARTUP, fspa()) is HeatAction.ON
+    assert fact(Trigger.STARTUP, fspa(circulation=False)) is HeatAction.OFF
+
+
+def test_spa_heating_in_a_filter_cycle_still_switches_on():
+    assert fact(Trigger.SPA_HEATING, fspa(hvac_action="heating"), previous="off") is HeatAction.ON
+
+
+def test_toggle_off_keeps_todays_behaviour():
+    view = fspa(temperature=37.5)
+    assert fact(Trigger.SPA_SATISFIED, view, stay=False) is HeatAction.OFF
+    assert fact(Trigger.IN_USE, fspa(status=Status.IN_USE), stay=False) is HeatAction.HEAD_START
+
+
+def test_overtemp():
+    assert overtemp(38.0, 37.0, 1.0)
+    assert not overtemp(37.5, 37.0, 1.0)
+    assert not overtemp(None, 37.0, 1.0)
+    assert not overtemp(38.0, None, 1.0)
+    assert overtemp(37.5, 37.0, 0.5)
+
+
+def test_overtemp_alert_text():
+    title, message = OVERTEMP_ALERT
+    assert title == "⚠️ Udespa Varmepumpe"
+    assert message.startswith("Sikkerhedsstop: spaen har været mindst 1 grad over setpunkt")

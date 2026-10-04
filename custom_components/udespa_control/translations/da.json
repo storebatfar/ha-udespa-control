@@ -55,6 +55,8 @@
               "in_use_threshold_c": "I brug-grænse over hviletemperatur",
               "cleaning_max_min": "Rengøring: max pr. cyklus",
               "cleaning_estimate_min": "Rengøring: visnings-estimat",
+              "overtemp_margin_c": "Sikkerhedsstop over setpunkt",
+              "overtemp_minutes": "Sikkerhedsstop efter",
               "preset_quiet": "Preset for Lydløs",
               "preset_smart": "Preset for Smart",
               "preset_turbo": "Preset for Turbo",
@@ -76,6 +78,8 @@
               "in_use_threshold_c": "Status er I brug, når setpunktet ligger mere end dette over hviletemperaturen.",
               "cleaning_max_min": "Sikkerhedsgrænse, hvis spaen ikke selv stopper rengøringspumpen (normalt efter 15 min).",
               "cleaning_estimate_min": "Vises på dashboards som forventet cyklus-længde.",
+              "overtemp_margin_c": "Under filtercyklus slukkes varmepumpen, hvis spaen bliver så meget over setpunktet.",
+              "overtemp_minutes": "Hvor længe spaen skal være over grænsen før sikkerhedsstoppet.",
               "preset_quiet": "Varmepumpens preset for tilstanden Lydløs.",
               "preset_smart": "Varmepumpens preset for tilstanden Smart.",
               "preset_turbo": "Varmepumpens preset for tilstanden Turbo.",
@@ -91,14 +95,16 @@
               "backup_heater": "Backup-varmelegeme ved fejl",
               "watchdog": "Vagthund",
               "notifications": "Notifikationer",
-              "fault_status": "Status Fejl ved varmepumpefejl"
+              "fault_status": "Status Fejl ved varmepumpefejl",
+              "filter_stay_on": "Varmepumpe tændt under filtercyklus"
             },
             "data_description": {
               "head_start": "Tænd varmepumpen, når cirkulationen starter i I brug, før spaen kalder på varme.",
               "backup_heater": "Tænd varmelegemet, når varmepumpen fejler, og vandet er koldt.",
               "watchdog": "Tjek jævnligt, at varmepumpen kører, mens vandet er koldt.",
               "notifications": "Send advarsler til notifikationstjenesten.",
-              "fault_status": "Vis Fejl som status, mens en varmepumpefejl er åben."
+              "fault_status": "Vis Fejl som status, mens en varmepumpefejl er åben.",
+              "filter_stay_on": "Hold varmepumpen tændt hele filtercyklussen og lad den selv regulere. Fra: den følger spaens varmekald, som uden for filtercyklus."
             }
           },
           "sources": {
@@ -246,6 +252,8 @@
               "in_use_threshold_c": "I brug-grænse over hviletemperatur",
               "cleaning_max_min": "Rengøring: max pr. cyklus",
               "cleaning_estimate_min": "Rengøring: visnings-estimat",
+              "overtemp_margin_c": "Sikkerhedsstop over setpunkt",
+              "overtemp_minutes": "Sikkerhedsstop efter",
               "preset_quiet": "Preset for Lydløs",
               "preset_smart": "Preset for Smart",
               "preset_turbo": "Preset for Turbo",
@@ -267,6 +275,8 @@
               "in_use_threshold_c": "Status er I brug, når setpunktet ligger mere end dette over hviletemperaturen.",
               "cleaning_max_min": "Sikkerhedsgrænse, hvis spaen ikke selv stopper rengøringspumpen (normalt efter 15 min).",
               "cleaning_estimate_min": "Vises på dashboards som forventet cyklus-længde.",
+              "overtemp_margin_c": "Under filtercyklus slukkes varmepumpen, hvis spaen bliver så meget over setpunktet.",
+              "overtemp_minutes": "Hvor længe spaen skal være over grænsen før sikkerhedsstoppet.",
               "preset_quiet": "Varmepumpens preset for tilstanden Lydløs.",
               "preset_smart": "Varmepumpens preset for tilstanden Smart.",
               "preset_turbo": "Varmepumpens preset for tilstanden Turbo.",
@@ -282,14 +292,16 @@
               "backup_heater": "Backup-varmelegeme ved fejl",
               "watchdog": "Vagthund",
               "notifications": "Notifikationer",
-              "fault_status": "Status Fejl ved varmepumpefejl"
+              "fault_status": "Status Fejl ved varmepumpefejl",
+              "filter_stay_on": "Varmepumpe tændt under filtercyklus"
             },
             "data_description": {
               "head_start": "Tænd varmepumpen, når cirkulationen starter i I brug, før spaen kalder på varme.",
               "backup_heater": "Tænd varmelegemet, når varmepumpen fejler, og vandet er koldt.",
               "watchdog": "Tjek jævnligt, at varmepumpen kører, mens vandet er koldt.",
               "notifications": "Send advarsler til notifikationstjenesten.",
-              "fault_status": "Vis Fejl som status, mens en varmepumpefejl er åben."
+              "fault_status": "Vis Fejl som status, mens en varmepumpefejl er åben.",
+              "filter_stay_on": "Hold varmepumpen tændt hele filtercyklussen og lad den selv regulere. Fra: den følger spaens varmekald, som uden for filtercyklus."
             }
           },
           "sources": {

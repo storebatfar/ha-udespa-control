@@ -55,6 +55,8 @@
               "in_use_threshold_c": "In use above rest temperature",
               "cleaning_max_min": "Cleaning: maximum per cycle",
               "cleaning_estimate_min": "Cleaning: display estimate",
+              "overtemp_margin_c": "Safety stop above setpoint",
+              "overtemp_minutes": "Safety stop after",
               "preset_quiet": "Preset for Lydløs",
               "preset_smart": "Preset for Smart",
               "preset_turbo": "Preset for Turbo",
@@ -76,6 +78,8 @@
               "in_use_threshold_c": "Status is I brug when the setpoint is more than this above the rest temperature.",
               "cleaning_max_min": "Backstop if the spa never stops the cleaning pump itself (it normally does after 15 min).",
               "cleaning_estimate_min": "Shown to dashboards as the expected cycle length.",
+              "overtemp_margin_c": "During a filter cycle the heat pump is switched off if the spa stays this far above its setpoint.",
+              "overtemp_minutes": "How long the spa must stay over the limit before the safety stop.",
               "preset_quiet": "The heat pump's preset for the Lydløs mode.",
               "preset_smart": "The heat pump's preset for the Smart mode.",
               "preset_turbo": "The heat pump's preset for the Turbo mode.",
@@ -91,14 +95,16 @@
               "backup_heater": "Backup heater on failure",
               "watchdog": "Watchdog",
               "notifications": "Notifications",
-              "fault_status": "Status Fejl on heat pump failure"
+              "fault_status": "Status Fejl on heat pump failure",
+              "filter_stay_on": "Heat pump on during filter cycles"
             },
             "data_description": {
               "head_start": "Switch the heat pump on when circulation starts in I brug, before the spa calls for heat.",
               "backup_heater": "Switch the heater on when the heat pump fails and the water is cold.",
               "watchdog": "Check regularly that the heat pump runs while the water is cold.",
               "notifications": "Send alerts to the notification service.",
-              "fault_status": "Show Fejl as the status while a heat pump failure is open."
+              "fault_status": "Show Fejl as the status while a heat pump failure is open.",
+              "filter_stay_on": "Keep the heat pump on for the whole filter cycle and let it regulate itself. Off: it follows the spa's heat calls, as outside filter cycles."
             }
           },
           "sources": {
@@ -246,6 +252,8 @@
               "in_use_threshold_c": "In use above rest temperature",
               "cleaning_max_min": "Cleaning: maximum per cycle",
               "cleaning_estimate_min": "Cleaning: display estimate",
+              "overtemp_margin_c": "Safety stop above setpoint",
+              "overtemp_minutes": "Safety stop after",
               "preset_quiet": "Preset for Lydløs",
               "preset_smart": "Preset for Smart",
               "preset_turbo": "Preset for Turbo",
@@ -267,6 +275,8 @@
               "in_use_threshold_c": "Status is I brug when the setpoint is more than this above the rest temperature.",
               "cleaning_max_min": "Backstop if the spa never stops the cleaning pump itself (it normally does after 15 min).",
               "cleaning_estimate_min": "Shown to dashboards as the expected cycle length.",
+              "overtemp_margin_c": "During a filter cycle the heat pump is switched off if the spa stays this far above its setpoint.",
+              "overtemp_minutes": "How long the spa must stay over the limit before the safety stop.",
               "preset_quiet": "The heat pump's preset for the Lydløs mode.",
               "preset_smart": "The heat pump's preset for the Smart mode.",
               "preset_turbo": "The heat pump's preset for the Turbo mode.",
@@ -282,14 +292,16 @@
               "backup_heater": "Backup heater on failure",
               "watchdog": "Watchdog",
               "notifications": "Notifications",
-              "fault_status": "Status Fejl on heat pump failure"
+              "fault_status": "Status Fejl on heat pump failure",
+              "filter_stay_on": "Heat pump on during filter cycles"
             },
             "data_description": {
               "head_start": "Switch the heat pump on when circulation starts in I brug, before the spa calls for heat.",
               "backup_heater": "Switch the heater on when the heat pump fails and the water is cold.",
               "watchdog": "Check regularly that the heat pump runs while the water is cold.",
               "notifications": "Send alerts to the notification service.",
-              "fault_status": "Show Fejl as the status while a heat pump failure is open."
+              "fault_status": "Show Fejl as the status while a heat pump failure is open.",
+              "filter_stay_on": "Keep the heat pump on for the whole filter cycle and let it regulate itself. Off: it follows the spa's heat calls, as outside filter cycles."
             }
           },
           "sources": {
