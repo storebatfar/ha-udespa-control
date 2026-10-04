@@ -126,6 +126,8 @@ OPT_CLEANING_ESTIMATE: Final = "cleaning_estimate_min"
 OPT_PRESET_QUIET: Final = "preset_quiet"
 OPT_PRESET_SMART: Final = "preset_smart"
 OPT_PRESET_TURBO: Final = "preset_turbo"
+OPT_MODE_MAINTAINING: Final = "mode_maintaining"
+OPT_MODE_IN_USE: Final = "mode_in_use"
 
 OPT_HEAD_START: Final = "head_start"
 OPT_BACKUP: Final = "backup_heater"
@@ -150,6 +152,7 @@ NUMBER_KEYS: Final = (
     OPT_CLEANING_ESTIMATE,
 )
 PRESET_KEYS: Final = (OPT_PRESET_QUIET, OPT_PRESET_SMART, OPT_PRESET_TURBO)
+MODE_KEYS: Final = (OPT_MODE_MAINTAINING, OPT_MODE_IN_USE)
 TOGGLE_KEYS: Final = (
     OPT_HEAD_START,
     OPT_BACKUP,
@@ -177,6 +180,8 @@ DEFAULTS: Final[dict[str, Any]] = {
     OPT_PRESET_QUIET: "quick",
     OPT_PRESET_SMART: "smart",
     OPT_PRESET_TURBO: "quiet",
+    OPT_MODE_MAINTAINING: "Lydløs",
+    OPT_MODE_IN_USE: "Smart",
     OPT_HEAD_START: True,
     OPT_BACKUP: True,
     OPT_WATCHDOG: True,
@@ -204,6 +209,9 @@ WATCH_ONLY_PREFIX: Final = "(kun overvågning) "
 
 OFFSET_VALUES: Final = (0.0, 0.5, 1.0)
 SYNC_TOLERANCE: Final = 0.05
+# B12′: the heat pump can drop a preset change at power-on (seen 2026-10-04).
+MODE_CHECK_S: Final = 10
+MODE_ATTEMPTS: Final = 3
 DEFAULT_HP_LIMITS: Final = (6.0, 41.0)
 
 DEMAND_LABELS: Final[dict[str, str]] = {

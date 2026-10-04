@@ -16,12 +16,15 @@ from custom_components.udespa_control.const import (
     CONF_SRC_HP_OUTLET,
     CONF_SRC_WATER_TDS,
     DEFAULTS,
+    OPT_MODE_IN_USE,
+    OPT_MODE_MAINTAINING,
     OPT_PRESET_TURBO,
     OPT_RETRY_MINUTES,
     OPT_WATCHDOG,
     SOURCE_KEYS,
     SUGGESTED_SOURCES,
     Mode,
+    Status,
 )
 from custom_components.udespa_control.settings import Settings
 
@@ -96,3 +99,18 @@ def test_suggested_sources_are_known_keys_without_tds():
     assert set(SUGGESTED_SOURCES) <= set(SOURCE_KEYS)
     assert CONF_SRC_WATER_TDS not in SUGGESTED_SOURCES
     assert len(SOURCE_KEYS) == 15
+
+
+def test_modes_default_to_todays_pair():
+    s = Settings.from_mappings(DATA, {})
+    assert s.modes == {Status.MAINTAINING: Mode.QUIET, Status.IN_USE: Mode.SMART}
+
+
+def test_modes_follow_the_options():
+    s = Settings.from_mappings(DATA, {OPT_MODE_IN_USE: "Turbo", OPT_MODE_MAINTAINING: "Smart"})
+    assert s.modes == {Status.MAINTAINING: Mode.SMART, Status.IN_USE: Mode.TURBO}
+
+
+def test_an_unknown_mode_falls_back_to_the_default():
+    s = Settings.from_mappings(DATA, {OPT_MODE_IN_USE: "Boost"})
+    assert s.modes[Status.IN_USE] is Mode.SMART

@@ -22,6 +22,8 @@ from custom_components.udespa_control.const import (
     DOMAIN,
     NUMBER_KEYS,
     OPT_HP_OFF_W,
+    OPT_MODE_IN_USE,
+    OPT_MODE_MAINTAINING,
     OPT_PRESET_TURBO,
     OPT_RETRY_MINUTES,
     OPT_WATCHDOG,
@@ -266,3 +268,10 @@ async def test_an_entry_from_a_future_major_version_is_refused(hass: HomeAssista
     with patch(SETUP, return_value=True):
         assert not await hass.config_entries.async_setup(entry.entry_id)
     assert entry.state is ConfigEntryState.MIGRATION_ERROR
+
+
+async def test_the_mode_choices_are_in_the_numbers_section(hass: HomeAssistant, tub: FakeTub):
+    result = await _start(hass)
+    numbers = result["data_schema"].schema[SECTION_NUMBERS].schema.schema
+    defaults = {str(marker): marker.default() for marker in numbers if str(marker) in (OPT_MODE_MAINTAINING, OPT_MODE_IN_USE)}
+    assert defaults == {OPT_MODE_MAINTAINING: "Lydløs", OPT_MODE_IN_USE: "Smart"}

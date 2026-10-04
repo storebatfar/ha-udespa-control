@@ -10,6 +10,7 @@ from homeassistant.util import dt as dt_util
 
 from custom_components.udespa_control.const import (
     OPT_FAULT_STATUS,
+    OPT_MODE_IN_USE,
     OPT_WATCHDOG,
     Mode,
     Status,
@@ -573,3 +574,12 @@ async def test_offset_survives_a_restart(hass: HomeAssistant, tub: FakeTub, make
     await first.async_shutdown()
     second = await make_controller(active=False, entry=first.entry)
     assert second.state.offset == 0.5
+
+
+async def test_the_chosen_in_use_mode_is_sent(
+    hass: HomeAssistant, freezer: FrozenDateTimeFactory, tub: FakeTub, make_controller
+):
+    await make_controller(**{OPT_MODE_IN_USE: "Turbo"})
+    tub.spa(setpoint=38.0)
+    await advance(hass, freezer, 5)
+    assert tub.presets() == ["quiet"]

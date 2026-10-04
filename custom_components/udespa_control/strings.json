@@ -57,7 +57,9 @@
               "cleaning_estimate_min": "Cleaning: display estimate",
               "preset_quiet": "Preset for Lydløs",
               "preset_smart": "Preset for Smart",
-              "preset_turbo": "Preset for Turbo"
+              "preset_turbo": "Preset for Turbo",
+              "mode_maintaining": "Mode in Vedligeholder",
+              "mode_in_use": "Mode in I brug"
             },
             "data_description": {
               "off_delay_s": "How long the spa must report off before the heat pump is switched off.",
@@ -76,7 +78,9 @@
               "cleaning_estimate_min": "Shown to dashboards as the expected cycle length.",
               "preset_quiet": "The heat pump's preset for the Lydløs mode.",
               "preset_smart": "The heat pump's preset for the Smart mode.",
-              "preset_turbo": "The heat pump's preset for the Turbo mode."
+              "preset_turbo": "The heat pump's preset for the Turbo mode.",
+              "mode_maintaining": "The heat pump's mode while the status is Vedligeholder.",
+              "mode_in_use": "The heat pump's mode while the status is I brug."
             }
           },
           "toggles": {
@@ -244,7 +248,9 @@
               "cleaning_estimate_min": "Cleaning: display estimate",
               "preset_quiet": "Preset for Lydløs",
               "preset_smart": "Preset for Smart",
-              "preset_turbo": "Preset for Turbo"
+              "preset_turbo": "Preset for Turbo",
+              "mode_maintaining": "Mode in Vedligeholder",
+              "mode_in_use": "Mode in I brug"
             },
             "data_description": {
               "off_delay_s": "How long the spa must report off before the heat pump is switched off.",
@@ -263,7 +269,9 @@
               "cleaning_estimate_min": "Shown to dashboards as the expected cycle length.",
               "preset_quiet": "The heat pump's preset for the Lydløs mode.",
               "preset_smart": "The heat pump's preset for the Smart mode.",
-              "preset_turbo": "The heat pump's preset for the Turbo mode."
+              "preset_turbo": "The heat pump's preset for the Turbo mode.",
+              "mode_maintaining": "The heat pump's mode while the status is Vedligeholder.",
+              "mode_in_use": "The heat pump's mode while the status is I brug."
             }
           },
           "toggles": {

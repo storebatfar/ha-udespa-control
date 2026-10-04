@@ -36,6 +36,8 @@ from .const import (
     OPT_HP_OFF_W,
     OPT_HP_ON_W,
     OPT_IN_USE_THRESHOLD,
+    OPT_MODE_IN_USE,
+    OPT_MODE_MAINTAINING,
     OPT_NOTIFICATIONS,
     OPT_OFF_DELAY,
     OPT_PRESET_QUIET,
@@ -48,7 +50,15 @@ from .const import (
     SOURCE_KEYS,
     VERIFY_POLL_S,
     Mode,
+    Status,
 )
+
+
+def _mode(value: Any, default: str) -> Mode:
+    try:
+        return Mode(value)
+    except ValueError:
+        return Mode(default)
 
 
 @dataclass(frozen=True)
@@ -81,6 +91,7 @@ class Settings:
     cleaning_max_min: float
     cleaning_estimate_min: float
     presets: Mapping[Mode, str]
+    modes: Mapping[Status, Mode]
 
     head_start: bool
     backup_heater: bool
@@ -130,6 +141,10 @@ class Settings:
                 Mode.QUIET: str(o[OPT_PRESET_QUIET]),
                 Mode.SMART: str(o[OPT_PRESET_SMART]),
                 Mode.TURBO: str(o[OPT_PRESET_TURBO]),
+            },
+            modes={
+                Status.MAINTAINING: _mode(o[OPT_MODE_MAINTAINING], DEFAULTS[OPT_MODE_MAINTAINING]),
+                Status.IN_USE: _mode(o[OPT_MODE_IN_USE], DEFAULTS[OPT_MODE_IN_USE]),
             },
             head_start=bool(o[OPT_HEAD_START]),
             backup_heater=bool(o[OPT_BACKUP]),

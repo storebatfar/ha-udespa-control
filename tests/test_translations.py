@@ -8,6 +8,7 @@ from pathlib import Path
 
 from custom_components.udespa_control.const import (
     ENTITY_KEYS,
+    MODE_KEYS,
     NUMBER_KEYS,
     PRESET_KEYS,
     SOURCE_KEYS,
@@ -28,7 +29,7 @@ def test_generated_files_are_up_to_date():
 
 
 def test_every_setting_has_text_in_both_languages():
-    expected = {*ENTITY_KEYS, *NUMBER_KEYS, *PRESET_KEYS, *TOGGLE_KEYS, *SOURCE_KEYS}
+    expected = {*ENTITY_KEYS, *NUMBER_KEYS, *PRESET_KEYS, *MODE_KEYS, *TOGGLE_KEYS, *SOURCE_KEYS}
     assert set(build_translations.FIELDS) == expected
     for key, texts in build_translations.FIELDS.items():
         assert all(text.strip() for text in texts), key

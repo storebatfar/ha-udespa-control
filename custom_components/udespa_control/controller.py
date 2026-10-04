@@ -375,7 +375,7 @@ class UdespaController:
         self.state.status = new
         self._save()
         self.record(f"Status {new}: {reason}")
-        if (mode := mode_for_status(new)) is not None:
+        if (mode := mode_for_status(new, self.settings.modes)) is not None:
             self._spawn(self._async_apply_mode(mode, f"status er {new}"), "mode")
         if new is Status.IN_USE:
             self._decide(Trigger.IN_USE)
