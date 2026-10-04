@@ -524,6 +524,10 @@ class UdespaController:
         """C14/C15."""
         if not self.state.frost_protection:
             return
+        if old is None:
+            # The entity was just created (HA or the integration starting):
+            # its first reading is no crossing. unavailable → value still is.
+            return
         limit = self.settings.frost_limit
         temperature = self.reader.outdoor_value(new)
         action = frost_action(self.reader.outdoor_value(old), temperature, limit)
