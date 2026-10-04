@@ -39,6 +39,8 @@ from .const import (
     DOMAIN,
     FILTER_START_DELAY_S,
     LAST_ACTION_MAX,
+    LATCH_CLEAR_S,
+    LATCH_EXPIRY_S,
     STATUS_DELAY_S,
     CleaningPhase,
     HeatAction,
@@ -114,6 +116,7 @@ class UdespaController:
         self._cancel_satisfied: CALLBACK_TYPE | None = None
         self._cancel_filter: CALLBACK_TYPE | None = None
         self._cancel_overtemp: CALLBACK_TYPE | None = None
+        self._cancel_latch: CALLBACK_TYPE | None = None
         self._cancel_status: CALLBACK_TYPE | None = None
         self._pending_status: Status | None = None
         self._timer_days: tuple[int | None, int | None] = (None, None)
@@ -169,10 +172,10 @@ class UdespaController:
         self._unsubs.clear()
         self._cancel_satisfied_timer()
         self._cancel_status_timer()
-        for cancel in (self._cancel_filter, self._cancel_overtemp):
+        for cancel in (self._cancel_filter, self._cancel_overtemp, self._cancel_latch):
             if cancel is not None:
                 cancel()
-        self._cancel_filter = self._cancel_overtemp = None
+        self._cancel_filter = self._cancel_overtemp = self._cancel_latch = None
         await self.cleaning.async_shutdown()
         await self.heat_pump.async_shutdown()
         await self.mode_keeper.async_shutdown()
@@ -601,6 +604,36 @@ class UdespaController:
             return  # already on: circulation started inside the cycle, or a heat call
         self._decide(Trigger.FILTER_START)
 
+    def _check_latch(self) -> None:
+        """Clear the F5 latch after LATCH_CLEAR_S of every filter sensor off, or on expiry."""
+        stopped_at = self.state.overtemp_stopped_at
+        if stopped_at is not None and (
+            (dt_util.utcnow() - stopped_at).total_seconds() >= LATCH_EXPIRY_S
+        ):
+            self._clear_latch("udløbet efter 12 timer")
+            return
+        if not self._filter_cycle_ended():
+            if self._cancel_latch is not None:
+                self._cancel_latch()
+                self._cancel_latch = None
+            return
+        if self._cancel_latch is None:
+            self._cancel_latch = async_call_later(self.hass, LATCH_CLEAR_S, self._latch_fired)
+
+    @callback
+    def _latch_fired(self, _now: Any) -> None:
+        self._cancel_latch = None
+        if self.state.overtemp_stopped and self._filter_cycle_ended():
+            self._clear_latch("filtercyklussen er slut")
+
+    def _clear_latch(self, why: str) -> None:
+        if self._cancel_latch is not None:
+            self._cancel_latch()
+            self._cancel_latch = None
+        self.state.overtemp_stopped_at = None
+        self._save()
+        self.record(f"Sikkerhedsstop nulstillet: {why}")
+
     def _filter_cycle_ended(self) -> bool:
         """Every configured filter sensor is known off (no sensors: never in a cycle)."""
         s = self.settings
@@ -640,9 +673,8 @@ class UdespaController:
         The start time lives in storage, so a restart resumes the remaining
         time instead of starting the 5 minutes over.
         """
-        if self.state.overtemp_stopped and self._filter_cycle_ended():
-            self.state.overtemp_stopped = False  # a new cycle gets rule F again
-            self._save()
+        if self.state.overtemp_stopped:
+            self._check_latch()
         reading = self._overtemp_reading()
         if reading is not True:
             if self._cancel_overtemp is not None:
@@ -683,7 +715,7 @@ class UdespaController:
         self.state.overtemp_since = self.state.overtemp_seen = None
         # One stop per cycle: the rest of it runs as outside filter cycles, so
         # a sensor flap can't switch back on and watch-only doesn't re-alert.
-        self.state.overtemp_stopped = True
+        self.state.overtemp_stopped_at = dt_util.utcnow()
         self._save()
         self._spawn(
             self.actuators.notify(*overtemp_alert(s.overtemp_margin, s.overtemp_minutes)),

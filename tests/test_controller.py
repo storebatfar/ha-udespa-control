@@ -1065,3 +1065,51 @@ async def test_a_manual_off_does_not_block_the_filter_start(
     await advance(hass, freezer, 10)
     assert tub.hp_modes()[-1] == "heat"
     assert len(tub.hp_modes()) == 2
+
+
+async def _safety_stopped(hass, freezer, tub, make_controller, **kwargs):
+    controller = await make_controller(**kwargs)
+    await _filter_cycle_running(hass, freezer, tub)
+    tub.spa(temperature=38.0)
+    await advance(hass, freezer, 300, step=10)
+    assert controller.state.overtemp_stopped is True
+    return controller
+
+
+async def test_a_short_off_blip_keeps_the_latch(
+    hass: HomeAssistant, freezer: FrozenDateTimeFactory, tub: FakeTub, make_controller
+):
+    await _safety_stopped(hass, freezer, tub, make_controller)
+    tub.filter_cycle(1, False)
+    await advance(hass, freezer, 2)
+    tub.filter_cycle(1, True)
+    await advance(hass, freezer, 60, step=5)
+    assert tub.hp_modes()[-1] == "off"
+    assert _safety_stops(tub) == 1
+
+
+async def test_the_latch_clears_10_min_after_the_cycle(
+    hass: HomeAssistant, freezer: FrozenDateTimeFactory, tub: FakeTub, make_controller
+):
+    controller = await _safety_stopped(hass, freezer, tub, make_controller)
+    tub.filter_cycle(1, False)
+    tub.circulation(False)
+    await advance(hass, freezer, 599, step=10)
+    assert controller.state.overtemp_stopped is True
+    await advance(hass, freezer, 1)
+    assert controller.state.overtemp_stopped is False
+    assert any("Sikkerhedsstop nulstillet" in line for line in controller.recent)
+
+
+async def test_a_stuck_latch_expires_after_12_hours(
+    hass: HomeAssistant, freezer: FrozenDateTimeFactory, tub: FakeTub, make_controller
+):
+    """One filter sensor dead for good: the latch must not disable rule F forever."""
+    controller = await _safety_stopped(hass, freezer, tub, make_controller)
+    hass.states.async_set(FILTER_2, "unavailable")
+    tub.filter_cycle(1, False)
+    tub.circulation(False)
+    freezer.tick(timedelta(hours=12))
+    tub.hp_power(9)  # L3 reports all the time
+    await advance(hass, freezer, 1)
+    assert controller.state.overtemp_stopped is False

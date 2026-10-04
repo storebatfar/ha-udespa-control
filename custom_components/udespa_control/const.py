@@ -224,6 +224,11 @@ MODE_ATTEMPTS: Final = 3
 # Rule F: the filter-cycle sensor must hold "on" this long before the heat
 # pump is switched on, so the circulation state has caught up.
 FILTER_START_DELAY_S: Final = 10
+# F5 latch: cleared once every filter sensor has been off this long (a short
+# "off" blip mustn't re-arm rule F), or after LATCH_EXPIRY_S whatever happens
+# (a filter sensor dead for good mustn't disable rule F forever).
+LATCH_CLEAR_S: Final = 600
+LATCH_EXPIRY_S: Final = 12 * 3600
 DEFAULT_HP_LIMITS: Final = (6.0, 41.0)
 
 DEMAND_LABELS: Final[dict[str, str]] = {
