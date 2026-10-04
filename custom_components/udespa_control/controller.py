@@ -47,6 +47,7 @@ from .const import (
     Trigger,
 )
 from .heat_pump import HeatPump
+from .mode import ModeKeeper
 from .reader import TubReader, as_float
 from .rules import (
     FOLLOWS_SETPOINT,
@@ -88,6 +89,9 @@ class UdespaController:
         self.actuators = Actuators(
             hass, self.settings, self.record, lambda: self.state.active
         )
+        self.mode_keeper = ModeKeeper(
+            hass, self.settings, self.reader, self.actuators, self.record
+        )
         self.heat_pump = HeatPump(
             hass,
             self.settings,
@@ -96,6 +100,7 @@ class UdespaController:
             record=self.record,
             failure_open=lambda: self.state.failure_open,
             set_failure=self.set_failure,
+            on_switched_on=lambda: self.mode_keeper.reassert("efter tænd"),
         )
         self._store = UdespaStore(hass, entry.entry_id)
         self._listeners: list[Callable[[], None]] = []
@@ -158,6 +163,7 @@ class UdespaController:
         self._cancel_status_timer()
         await self.cleaning.async_shutdown()
         await self.heat_pump.async_shutdown()
+        await self.mode_keeper.async_shutdown()
         for task in list(self._tasks):
             task.cancel()
         for task in list(self._tasks):
@@ -254,10 +260,8 @@ class UdespaController:
         self._evaluate_status_soon()
 
     async def async_select_mode(self, mode: Mode) -> None:
-        """A manual pick is deliberate: it acts even in watch-only mode."""
-        await self.actuators.heat_pump_preset(
-            self.settings.presets[mode], "valgt manuelt", deliberate=True
-        )
+        """A manual pick is deliberate: it acts, and is verified, even in watch-only."""
+        self.mode_keeper.apply(mode, "valgt manuelt", deliberate=True)
 
     async def async_nudge_setpoint(self, delta: float) -> None:
         """B13."""
@@ -376,7 +380,7 @@ class UdespaController:
         self._save()
         self.record(f"Status {new}: {reason}")
         if (mode := mode_for_status(new, self.settings.modes)) is not None:
-            self._spawn(self._async_apply_mode(mode, f"status er {new}"), "mode")
+            self.mode_keeper.apply(mode, f"status er {new}")
         if new is Status.IN_USE:
             self._decide(Trigger.IN_USE)
 
@@ -433,11 +437,6 @@ class UdespaController:
             self._cancel_status = None
         self._pending_status = None
 
-    async def _async_apply_mode(self, mode: Mode, reason: str) -> None:
-        preset = self.settings.presets[mode]
-        if self.reader.hp_preset() != preset:
-            await self.actuators.heat_pump_preset(preset, reason)
-
     # --- failure (A5-A7, B11) -----------------------------------------------
 
     def set_failure(self, failure_open: bool) -> None:
@@ -464,6 +463,8 @@ class UdespaController:
             self._on_circulation(old, new)
         elif entity_id == s.heat_pump_power:
             self._on_heat_pump_power(new)
+        elif entity_id == s.heat_pump:
+            self.mode_keeper.adopt(self.reader.hp_preset())
         elif entity_id == s.outdoor:
             self._on_outdoor(old, new)
         self._notify_listeners()
