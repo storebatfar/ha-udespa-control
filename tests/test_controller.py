@@ -18,7 +18,7 @@ from custom_components.udespa_control.const import (
     Timer,
 )
 
-from .common import HEATER, HP, SPA, FakeTub, advance, settle
+from .common import HEATER, HP, OUTDOOR, SPA, FakeTub, advance, settle
 
 
 def _spa_setpoints(tub: FakeTub) -> list[float]:
@@ -626,3 +626,27 @@ async def test_a_heat_pump_change_outside_the_window_is_adopted(
     hass.states.async_set(HP, "off", {**hass.states.get(HP).attributes, "preset_mode": "quiet"})
     await settle(hass)
     assert controller.mode_keeper.wanted is Mode.TURBO
+
+
+async def test_first_outdoor_reading_after_startup_is_no_crossing(
+    hass: HomeAssistant, tub: FakeTub, make_controller
+):
+    """At HA start the forecast entity is created from nothing: not a frost crossing."""
+    await make_controller()
+    for temperature in (14.9, 3.0):
+        hass.states.async_remove(OUTDOOR)
+        await settle(hass)
+        tub.outdoor(temperature)
+        await settle(hass)
+    assert tub.heater_commands() == []
+
+
+async def test_return_from_unavailable_still_counts_as_a_crossing(
+    hass: HomeAssistant, tub: FakeTub, make_controller
+):
+    await make_controller()
+    hass.states.async_set(OUTDOOR, "unavailable", {})
+    await settle(hass)
+    tub.outdoor(3.0)
+    await settle(hass)
+    assert tub.heater_commands() == ["on"]
