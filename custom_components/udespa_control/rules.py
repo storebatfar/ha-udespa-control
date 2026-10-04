@@ -36,6 +36,7 @@ class SpaView:
     temperature: float | None
     setpoint: float | None
     status: Status
+    filter_cycle: bool = False
 
 
 @dataclass(frozen=True)
@@ -71,6 +72,7 @@ def heat_decision(
     *,
     head_start: bool,
     previous_action: str | None = None,
+    filter_stay_on: bool = False,
 ) -> Decision | None:
     """A1-A3 and A8: what the heat pump should do after this trigger.
 
@@ -78,6 +80,18 @@ def heat_decision(
     alone: a trigger that leads nowhere must not cancel a retry loop.
     """
     calling = spa.hvac_action in SPA_CALLING
+
+    # Rule F: during a filter cycle the heat pump stays on and regulates itself.
+    if filter_stay_on and spa.filter_cycle:
+        if trigger in (Trigger.FILTER_START, Trigger.CIRCULATION_ON, Trigger.STARTUP):
+            if spa.circulation:
+                return Decision(
+                    HeatAction.ON, "filtercyklus: varmepumpen står tændt hele cyklussen"
+                )
+        elif trigger in (Trigger.SPA_SATISFIED, Trigger.IN_USE):
+            return None  # no switch-off on "satisfied", no head start
+    if trigger is Trigger.FILTER_START:
+        return None
 
     if trigger is Trigger.SPA_HEATING:
         # The second "heating" after the 90 s "idle" flow check is the same call.
@@ -362,3 +376,18 @@ def round_power(value: float | None) -> int | None:
 
 def demand_label(action: Any) -> str | None:
     return DEMAND_LABELS.get(action) if isinstance(action, str) else None
+
+
+def overtemp(temperature: float | None, setpoint: float | None, margin: float) -> bool:
+    """F5: the spa is at least `margin` over its setpoint. Unknown never counts."""
+    if temperature is None or setpoint is None:
+        return False
+    return round(temperature - setpoint, 3) >= margin
+
+
+OVERTEMP_ALERT: tuple[str, str] = (
+    _HP_WARNING_TITLE,
+    ("Sikkerhedsstop: spaen har været mindst 1 grad over setpunkt i 5 minutter under "
+    "filtercyklussen. Varmepumpen slukkes. Tjek varmepumpens temperaturkalibrering "
+    "(skal være 0)."),
+)

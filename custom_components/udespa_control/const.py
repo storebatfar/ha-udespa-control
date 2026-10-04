@@ -134,6 +134,9 @@ OPT_BACKUP: Final = "backup_heater"
 OPT_WATCHDOG: Final = "watchdog"
 OPT_NOTIFICATIONS: Final = "notifications"
 OPT_FAULT_STATUS: Final = "fault_status"
+OPT_FILTER_STAY_ON: Final = "filter_stay_on"
+OPT_OVERTEMP_MARGIN: Final = "overtemp_margin_c"
+OPT_OVERTEMP_MINUTES: Final = "overtemp_minutes"
 
 NUMBER_KEYS: Final = (
     OPT_OFF_DELAY,
@@ -150,6 +153,8 @@ NUMBER_KEYS: Final = (
     OPT_IN_USE_THRESHOLD,
     OPT_CLEANING_MAX,
     OPT_CLEANING_ESTIMATE,
+    OPT_OVERTEMP_MARGIN,
+    OPT_OVERTEMP_MINUTES,
 )
 PRESET_KEYS: Final = (OPT_PRESET_QUIET, OPT_PRESET_SMART, OPT_PRESET_TURBO)
 MODE_KEYS: Final = (OPT_MODE_MAINTAINING, OPT_MODE_IN_USE)
@@ -159,6 +164,7 @@ TOGGLE_KEYS: Final = (
     OPT_WATCHDOG,
     OPT_NOTIFICATIONS,
     OPT_FAULT_STATUS,
+    OPT_FILTER_STAY_ON,
 )
 
 # Today's values (spec, "Tal" and "Til/fra").
@@ -187,6 +193,9 @@ DEFAULTS: Final[dict[str, Any]] = {
     OPT_WATCHDOG: True,
     OPT_NOTIFICATIONS: True,
     OPT_FAULT_STATUS: True,
+    OPT_FILTER_STAY_ON: True,
+    OPT_OVERTEMP_MARGIN: 1.0,
+    OPT_OVERTEMP_MINUTES: 5,
 }
 
 SECTION_ENTITIES: Final = "entities"
@@ -212,6 +221,9 @@ SYNC_TOLERANCE: Final = 0.05
 # B12′: the heat pump can drop a preset change at power-on (seen 2026-10-04).
 MODE_CHECK_S: Final = 10
 MODE_ATTEMPTS: Final = 3
+# Rule F: the filter-cycle sensor must hold "on" this long before the heat
+# pump is switched on, so the circulation state has caught up.
+FILTER_START_DELAY_S: Final = 10
 DEFAULT_HP_LIMITS: Final = (6.0, 41.0)
 
 DEMAND_LABELS: Final[dict[str, str]] = {
@@ -268,6 +280,7 @@ class Trigger(StrEnum):
     SPA_SATISFIED = "spa_satisfied"  # hvac_action has been "off" for the off delay
     IN_USE = "in_use"  # status became I brug
     STARTUP = "startup"
+    FILTER_START = "filter_start"  # a filter cycle has been on for FILTER_START_DELAY_S
 
 
 class BackupKind(StrEnum):

@@ -22,15 +22,16 @@ async def play(
     tub: FakeTub,
     events: list[Event],
     until: int,
+    step: float = 1.0,
 ) -> None:
     now = 0
     for at, action in events:
         if at > now:
-            await advance(hass, freezer, at - now)
+            await advance(hass, freezer, at - now, step=step)
             now = at
         action(tub)
         await settle(hass)
-    await advance(hass, freezer, until - now)
+    await advance(hass, freezer, until - now, step=step)
 
 
 def hvac_timeline(tub: FakeTub, t0: datetime) -> list[tuple[int, str]]:
@@ -143,13 +144,22 @@ async def test_2144_head_start(
     assert controller.status is Status.MAINTAINING
 
 
-async def test_1400_filter_cycle_switches_nothing_on(
+async def test_1400_filter_cycle_keeps_the_heat_pump_on(
     hass: HomeAssistant, freezer: FrozenDateTimeFactory, tub: FakeTub, make_controller
 ):
+    """Rule F: the heat pump stays on; the old overshoot (38-38.5 over 37) trips F5.
+
+    The spa reads at least 1 grad over its setpoint from the start; the hold
+    starts when the compressor runs (90 s), so the safety stop fires at 390 s.
+    """
     _calm_warm_tub(tub)
     await make_controller()
-    await play(hass, freezer, tub, FILTER_CYCLE_1400, until=300)
-    assert tub.hp_modes() == []
+    t0 = dt_util.utcnow()
+    await play(hass, freezer, tub, FILTER_CYCLE_1400, until=389)
+    assert hvac_timeline(tub, t0) == [(0, "heat")]  # circulation started inside the cycle
+    await advance(hass, freezer, 1)
+    assert hvac_timeline(tub, t0) == [(0, "heat"), (390, "off")]
+    assert [c.data["message"][:15] for c in tub.notifications()] == ["Sikkerhedsstop:"]
     assert tub.presets() == []
     assert tub.heater_commands() == []
 
@@ -166,3 +176,31 @@ async def test_2144_in_watch_only_sends_nothing_and_logs_every_decision(
     assert "(kun overvågning) Varmepumpe tændt: spaen kalder på varme" in log
     assert "(kun overvågning) Varmepumpe slukket: spaen er varm nok (37,5 °C)" in log
     assert "(kun overvågning) Varmepumpe slukket: cirkulationen er stoppet" in log
+
+
+# 2026-10-04 14:10-15:30: the stay-on test (calibration 0). The spa never
+# called; it read 37-38 while the heat pump regulated itself.
+STAY_ON_TEST_1410: list[Event] = [
+    (0, lambda t: t.filter_cycle(1, True)),
+    (0, lambda t: t.circulation(True)),
+    (150, lambda t: t.spa(temperature=37.5)),
+    (190, lambda t: t.spa(temperature=38.0)),
+    (234, lambda t: t.spa(temperature=37.5)),
+    (272, lambda t: t.spa(temperature=37.0)),
+    (620, lambda t: t.spa(temperature=37.5)),
+    (1936, lambda t: t.spa(temperature=37.0)),
+    (1982, lambda t: t.spa(temperature=37.5)),
+    (4797, lambda t: t.filter_cycle(1, False)),
+    (4797, lambda t: t.circulation(False)),
+]
+
+
+async def test_20261004_stay_on_test(
+    hass: HomeAssistant, freezer: FrozenDateTimeFactory, tub: FakeTub, make_controller
+):
+    tub.spa(action="off", temperature=37.0, setpoint=37.0)
+    await make_controller()
+    t0 = dt_util.utcnow()
+    await play(hass, freezer, tub, STAY_ON_TEST_1410, until=4830, step=5)
+    assert hvac_timeline(tub, t0) == [(0, "heat"), (4797, "off")]
+    assert tub.notifications() == []

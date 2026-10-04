@@ -46,6 +46,11 @@ The heat pump can drop a mode change it gets as it switches on, so every mode ch
 checked after 10 s and resent (up to 3 attempts), and the mode is re-asserted after each
 switch-on. A change made on the heat pump itself is accepted.
 
+**Filter cycles.** During a filter cycle the heat pump stays on and regulates itself
+(Configure → Til/fra: *Varmepumpe tændt under filtercyklus*). A safety stop switches it
+off if the spa stays 1.0 °C over its setpoint for 5 minutes (both adjustable under Tal).
+The heat pump's own temperature calibration must be 0; 2.5 made it overshoot.
+
 ## The rules
 
 Every rule is a pure function in `custom_components/udespa_control/rules.py`, documented

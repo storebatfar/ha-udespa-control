@@ -107,3 +107,9 @@ def test_offset_round_trips_and_snaps():
     assert StoredState.from_dict({"offset": 0.7}).offset == 0.5
     assert StoredState.from_dict({}).offset == 0.0
     assert StoredState(offset=0.5).to_dict()["offset"] == 0.5
+
+
+def test_overtemp_since_round_trips():
+    since = datetime(2026, 10, 5, 0, 15, tzinfo=UTC)
+    assert StoredState.from_dict(StoredState(overtemp_since=since).to_dict()).overtemp_since == since
+    assert StoredState.from_dict({}).overtemp_since is None
