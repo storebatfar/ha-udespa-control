@@ -572,12 +572,20 @@ class UdespaController:
     # --- filter cycles (rule F) ---------------------------------------------
 
     def _on_filter_cycle(self, old: State | None, new: State | None) -> None:
-        """F1: a filter cycle that holds for FILTER_START_DELAY_S switches on."""
-        if self._cancel_filter is not None:
-            self._cancel_filter()
-            self._cancel_filter = None
+        """F1: a filter cycle that holds for FILTER_START_DELAY_S switches on.
+
+        Only the cycle ending cancels a pending start: an attribute update or
+        a blip on the other sensor must not lose it.
+        """
+        if self.reader.filter_cycle() is None:
+            if self._cancel_filter is not None:
+                self._cancel_filter()
+                self._cancel_filter = None
+            return
         was_on = old is not None and old.state == STATE_ON
         if new is not None and new.state == STATE_ON and not was_on:
+            if self._cancel_filter is not None:
+                self._cancel_filter()
             self._cancel_filter = async_call_later(
                 self.hass, FILTER_START_DELAY_S, self._filter_start_fired
             )
@@ -591,13 +599,33 @@ class UdespaController:
             return  # already on: circulation started inside the cycle, or a heat call
         self._decide(Trigger.FILTER_START)
 
-    def _overtemp_condition(self) -> bool:
+    def _overtemp_reading(self) -> bool | None:
+        """F5's condition: True over, False known not over, None unknown.
+
+        Over means the compressor is actually running (L3 power) with the spa
+        at least the margin over its setpoint. A warm tub after a bath, with
+        the heat pump in heat but resting, is not the heat pump overheating it.
+        """
         s = self.settings
-        return (
-            s.filter_stay_on
-            and self.reader.filter_cycle() is not None
-            and self.reader.hp_hvac_mode() == "heat"
-            and overtemp(self.reader.spa_temperature(), self.reader.setpoint(), s.overtemp_margin)
+        if not s.filter_stay_on:
+            return False
+        if self.reader.filter_cycle() is None:
+            sensors = [self.hass.states.get(e) for e in (s.filter_cycle_1, s.filter_cycle_2) if e]
+            if all(state is not None and state.state == STATE_OFF for state in sensors):
+                return False
+            return None
+        mode = self.reader.hp_hvac_mode()
+        if mode is None:
+            return None
+        if mode != "heat":
+            return False
+        power = self.reader.hp_power()
+        temperature = self.reader.spa_temperature()
+        setpoint = self.reader.setpoint()
+        if power is None or temperature is None or setpoint is None:
+            return None
+        return heat_pump_running(power, s.hp_on_w) and overtemp(
+            temperature, setpoint, s.overtemp_margin
         )
 
     @callback
@@ -607,21 +635,31 @@ class UdespaController:
         The start time lives in storage, so a restart resumes the remaining
         time instead of starting the 5 minutes over.
         """
-        if not self._overtemp_condition():
-            if self.state.overtemp_since is not None:
-                self.state.overtemp_since = None
-                self._save()
+        reading = self._overtemp_reading()
+        if reading is not True:
             if self._cancel_overtemp is not None:
                 self._cancel_overtemp()
                 self._cancel_overtemp = None
+            # Unknown (a blip, tuya_local reconnecting after a restart) pauses
+            # the hold; only a known "not over" ends it.
+            if reading is False and self.state.overtemp_since is not None:
+                self.state.overtemp_since = self.state.overtemp_seen = None
+                self._save()
             return
         now = dt_util.utcnow()
-        if self.state.overtemp_since is None:
-            self.state.overtemp_since = now
-            self._save()
+        hold_s = self.settings.overtemp_minutes * 60
+        seen = self.state.overtemp_seen
+        if (
+            self.state.overtemp_since is None
+            or seen is None
+            or (now - seen).total_seconds() > hold_s
+        ):
+            self.state.overtemp_since = now  # new hold, or unconfirmed for too long
+        self.state.overtemp_seen = now
+        self._save()
         if self._cancel_overtemp is None:
             held = (now - self.state.overtemp_since).total_seconds()
-            remaining = max(0.0, self.settings.overtemp_minutes * 60 - held)
+            remaining = max(0.0, hold_s - held)
             self._cancel_overtemp = async_call_later(
                 self.hass, remaining, self._overtemp_fired
             )
@@ -629,12 +667,12 @@ class UdespaController:
     @callback
     def _overtemp_fired(self, _now: Any) -> None:
         self._cancel_overtemp = None
-        if not self._overtemp_condition():
+        if self._overtemp_reading() is not True:
             self._evaluate_overtemp()
             return
         s = self.settings
         temperature = self.reader.spa_temperature()
-        self.state.overtemp_since = None
+        self.state.overtemp_since = self.state.overtemp_seen = None
         self._save()
         self._spawn(self.actuators.notify(*OVERTEMP_ALERT), "overtemp alert")
         self.heat_pump.start(

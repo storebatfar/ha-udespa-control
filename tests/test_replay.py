@@ -149,16 +149,16 @@ async def test_1400_filter_cycle_keeps_the_heat_pump_on(
 ):
     """Rule F: the heat pump stays on; the old overshoot (38-38.5 over 37) trips F5.
 
-    The spa reads at least 1 grad over its setpoint from the start, so the
-    safety stop fires after 5 minutes.
+    The spa reads at least 1 grad over its setpoint from the start; the hold
+    starts when the compressor runs (90 s), so the safety stop fires at 390 s.
     """
     _calm_warm_tub(tub)
     await make_controller()
     t0 = dt_util.utcnow()
-    await play(hass, freezer, tub, FILTER_CYCLE_1400, until=299)
+    await play(hass, freezer, tub, FILTER_CYCLE_1400, until=389)
     assert hvac_timeline(tub, t0) == [(0, "heat")]  # circulation started inside the cycle
     await advance(hass, freezer, 1)
-    assert hvac_timeline(tub, t0) == [(0, "heat"), (300, "off")]
+    assert hvac_timeline(tub, t0) == [(0, "heat"), (390, "off")]
     assert [c.data["message"][:15] for c in tub.notifications()] == ["Sikkerhedsstop:"]
     assert tub.presets() == []
     assert tub.heater_commands() == []

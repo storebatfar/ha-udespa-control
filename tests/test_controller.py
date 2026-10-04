@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from datetime import timedelta
 
+import pytest
 from freezegun.api import FrozenDateTimeFactory
 from homeassistant.core import HomeAssistant
 from homeassistant.util import dt as dt_util
@@ -20,6 +21,7 @@ from custom_components.udespa_control.const import (
 )
 
 from .common import (
+    FILTER_1,
     FILTER_2,
     HEATER,
     HP,
@@ -666,7 +668,7 @@ async def test_return_from_unavailable_still_counts_as_a_crossing(
 
 
 async def _filter_cycle_running(hass, freezer, tub):
-    """Circulation, then a filter cycle; the heat pump is on 10 s later.
+    """Circulation, then a filter cycle; the heat pump is on 10 s later and running at 100 s.
 
     The compressor is modelled so the on-job's verification passes and no
     backup-heater alert muddies the assertions.
@@ -676,6 +678,7 @@ async def _filter_cycle_running(hass, freezer, tub):
     await settle(hass)
     tub.filter_cycle(1, True)
     await advance(hass, freezer, 10)
+    await advance(hass, freezer, 90)  # the compressor is running (L3 power)
 
 
 def _safety_stops(tub: FakeTub) -> int:
@@ -867,3 +870,101 @@ async def test_overtemp_timer_survives_a_restart(
     assert sum("Varmepumpe slukket: sikkerhedsstop" in line for line in second.recent) == 1
     await advance(hass, freezer, 600, step=30)
     assert sum("Varmepumpe slukket: sikkerhedsstop" in line for line in second.recent) == 1
+
+
+# --- final-review fixes ------------------------------------------------------
+
+
+async def test_a_warm_tub_after_a_bath_is_no_overtemp(
+    hass: HomeAssistant, freezer: FrozenDateTimeFactory, tub: FakeTub, make_controller
+):
+    """38.5 over 37 after a bath: the heat pump is on but never runs, so it isn't overheating."""
+    tub.spa(temperature=38.5)
+    await make_controller()
+    tub.circulation(True)
+    await settle(hass)
+    tub.filter_cycle(1, True)
+    await advance(hass, freezer, 600, step=10)
+    assert tub.hp_modes() == ["heat"]
+    assert _safety_stops(tub) == 0
+
+
+async def test_an_unavailable_blip_keeps_the_hold(
+    hass: HomeAssistant, freezer: FrozenDateTimeFactory, tub: FakeTub, make_controller
+):
+    await make_controller()
+    await _filter_cycle_running(hass, freezer, tub)
+    tub.spa(temperature=38.0)
+    await advance(hass, freezer, 240, step=10)
+    attributes = dict(hass.states.get(HP).attributes)
+    hass.states.async_set(HP, "unavailable", {})
+    await advance(hass, freezer, 5)
+    hass.states.async_set(HP, "heat", attributes)
+    await advance(hass, freezer, 54)
+    assert _safety_stops(tub) == 0
+    await advance(hass, freezer, 1)
+    assert _safety_stops(tub) == 1
+
+
+async def test_restart_with_the_heat_pump_not_yet_connected_resumes(
+    hass: HomeAssistant, freezer: FrozenDateTimeFactory, tub: FakeTub, make_controller
+):
+    first = await make_controller()
+    await _filter_cycle_running(hass, freezer, tub)
+    tub.spa(temperature=38.0)
+    await advance(hass, freezer, 180, step=10)
+    await first.async_shutdown()
+    attributes = dict(hass.states.get(HP).attributes)
+    hass.states.async_set(HP, "unavailable", {})
+    tub.fail_services.add("climate.set_hvac_mode")  # tuya_local not connected yet
+    second = await make_controller(active=False, entry=first.entry)
+    await advance(hass, freezer, 20)
+    tub.fail_services.clear()
+    hass.states.async_set(HP, "heat", attributes)
+    await advance(hass, freezer, 99)
+    assert not any("sikkerhedsstop" in line for line in second.recent)
+    await advance(hass, freezer, 1)
+    assert sum("Varmepumpe slukket: sikkerhedsstop" in line for line in second.recent) == 1
+
+
+async def test_a_long_shutdown_starts_the_hold_over(
+    hass: HomeAssistant, freezer: FrozenDateTimeFactory, tub: FakeTub, make_controller
+):
+    first = await make_controller()
+    await _filter_cycle_running(hass, freezer, tub)
+    tub.spa(temperature=38.0)
+    await advance(hass, freezer, 180, step=10)
+    await first.async_shutdown()
+    freezer.tick(timedelta(hours=3))
+    second = await make_controller(active=False, entry=first.entry)
+    await advance(hass, freezer, 299, step=13)
+    assert not any("sikkerhedsstop" in line for line in second.recent)
+    await advance(hass, freezer, 1)
+    assert sum("Varmepumpe slukket: sikkerhedsstop" in line for line in second.recent) == 1
+
+
+@pytest.mark.parametrize("disturbance", ["attribute update", "other sensor blip"])
+async def test_a_filter_sensor_event_does_not_lose_the_filter_start(
+    hass: HomeAssistant,
+    freezer: FrozenDateTimeFactory,
+    tub: FakeTub,
+    make_controller,
+    disturbance: str,
+):
+    """Head start first, then the filter cycle: an unrelated sensor event mustn't
+    cancel the filter start, or the head start's 70 s off leaves it off all cycle."""
+    tub.model_compressor = True
+    await make_controller()
+    tub.spa(setpoint=38.0)
+    await advance(hass, freezer, 5)
+    tub.circulation(True)
+    await advance(hass, freezer, 3)
+    tub.filter_cycle(1, True)
+    await advance(hass, freezer, 5)
+    if disturbance == "attribute update":
+        hass.states.async_set(FILTER_1, "on", {"friendly_name": "Filtercyklus 1"})
+    else:
+        hass.states.async_set(FILTER_2, "unavailable")
+    await advance(hass, freezer, 180, step=5)
+    assert tub.hp_modes()[0] == "heat"
+    assert "off" not in tub.hp_modes()
