@@ -165,3 +165,56 @@ async def test_watch_only_logs_automatic_sends_but_a_manual_pick_acts(
     h.keeper.apply(Mode.TURBO, "valgt manuelt", deliberate=True)
     await advance(hass, freezer, 15, step=5)
     assert tub.presets() == ["quiet"]
+
+
+async def test_a_late_drop_is_caught_not_adopted(
+    hass: HomeAssistant, freezer: FrozenDateTimeFactory, tub: FakeTub, harness
+):
+    """The first check can still read the optimistic write; the mode must hold twice."""
+    tub.PRESET_REPORT_S = 12
+    tub.drop_presets = 1
+    h = harness()
+    h.keeper.apply(Mode.SMART, "status er I brug")
+    await advance(hass, freezer, 50, step=2)
+    assert tub.presets() == ["smart", "smart"]
+    assert _preset(hass) == "smart"
+    assert h.keeper.wanted is Mode.SMART
+
+
+async def test_watch_only_mismatch_is_marked_as_watch_only(
+    hass: HomeAssistant, freezer: FrozenDateTimeFactory, tub: FakeTub, harness
+):
+    h = harness()
+    h.active = False
+    h.keeper.apply(Mode.SMART, "status er I brug")
+    await advance(hass, freezer, 40, step=2)
+    assert tub.presets() == []
+    assert h.journal[-1] == "(kun overvågning) Varmepumpen står ikke i Smart efter 3 forsøg"
+
+
+async def test_reassert_leaves_a_running_check_for_the_wanted_mode(
+    hass: HomeAssistant, freezer: FrozenDateTimeFactory, tub: FakeTub, harness
+):
+    """A logged-only switch-on must not turn a manual pick's real check into logs."""
+    tub.drop_presets = 1
+    h = harness()
+    h.active = False
+    h.keeper.apply(Mode.TURBO, "valgt manuelt", deliberate=True)
+    await advance(hass, freezer, 3)
+    h.keeper.reassert("efter tænd")
+    await advance(hass, freezer, 40, step=2)
+    assert tub.presets() == ["quiet", "quiet"]
+    assert _preset(hass) == "quiet"
+
+
+async def test_same_mode_apply_keeps_the_running_check(
+    hass: HomeAssistant, freezer: FrozenDateTimeFactory, tub: FakeTub, harness
+):
+    tub.drop_presets = 1
+    h = harness()
+    h.keeper.apply(Mode.SMART, "valgt manuelt", deliberate=True)
+    await advance(hass, freezer, 3)
+    h.keeper.apply(Mode.SMART, "status er I brug")  # the optimistic "smart" matches
+    await advance(hass, freezer, 40, step=2)
+    assert tub.presets() == ["smart", "smart"]
+    assert _preset(hass) == "smart"
