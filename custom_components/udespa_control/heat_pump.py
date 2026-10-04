@@ -55,6 +55,7 @@ class HeatPump:
         record: Callable[[str], None],
         failure_open: Callable[[], bool],
         set_failure: Callable[[bool], None],
+        on_switched_on: Callable[[], None] | None = None,
     ) -> None:
         self._hass = hass
         self._s = settings
@@ -63,9 +64,15 @@ class HeatPump:
         self._record = record
         self._failure_open = failure_open
         self._set_failure = set_failure
+        self._on_switched_on = on_switched_on
         self._job: asyncio.Task[None] | None = None
         self._watchdog: asyncio.Task[None] | None = None
         self._backups = 0
+
+    def _switched_on(self) -> None:
+        """Let the mode keeper re-assert a mode the heat pump dropped at power-on."""
+        if self._on_switched_on is not None:
+            self._on_switched_on()
 
     @property
     def backup_running(self) -> bool:
@@ -127,6 +134,8 @@ class HeatPump:
                 await self._actuators.heat_pump_mode(
                     "heat", self._attempt_reason(reason, attempt)
                 )
+                if attempt == 0:
+                    self._switched_on()
             if self._running():
                 await self.async_recover()
                 return
@@ -165,6 +174,7 @@ class HeatPump:
 
     async def _async_head_start(self, reason: str) -> None:
         await self._actuators.heat_pump_mode("heat", reason)
+        self._switched_on()
         await async_sleep(self._hass, self._s.head_start_timeout_s)
         if self._reader.hvac_action() in SPA_CALLING:
             self._record("Hurtigstart: spaen kalder på varme, tænd-reglen overtager")

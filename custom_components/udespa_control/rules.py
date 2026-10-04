@@ -273,15 +273,9 @@ def resolve_status(
     return current
 
 
-_MODE_FOR_STATUS: dict[Status, Mode] = {
-    Status.MAINTAINING: Mode.QUIET,
-    Status.IN_USE: Mode.SMART,
-}
-
-
-def mode_for_status(status: Status) -> Mode | None:
-    """B12: Fejl and Rengøring leave the mode alone."""
-    return _MODE_FOR_STATUS.get(status)
+def mode_for_status(status: Status, modes: Mapping[Status, Mode]) -> Mode | None:
+    """B12: the configured mode; Fejl and Rengøring leave the mode alone."""
+    return modes.get(status)
 
 
 def mode_for_preset(preset: str | None, presets: Mapping[Mode, str]) -> Mode | None:

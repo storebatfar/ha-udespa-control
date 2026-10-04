@@ -124,11 +124,20 @@ def test_no_setpoint_keeps_a_normal_status():
 # --- B12 ----------------------------------------------------------------------
 
 
+MODES = {Status.MAINTAINING: Mode.QUIET, Status.IN_USE: Mode.SMART}
+
+
 def test_modes_follow_status():
-    assert mode_for_status(Status.MAINTAINING) is Mode.QUIET
-    assert mode_for_status(Status.IN_USE) is Mode.SMART
-    assert mode_for_status(Status.FAULT) is None
-    assert mode_for_status(Status.CLEANING) is None
+    assert mode_for_status(Status.MAINTAINING, MODES) is Mode.QUIET
+    assert mode_for_status(Status.IN_USE, MODES) is Mode.SMART
+    assert mode_for_status(Status.FAULT, MODES) is None
+    assert mode_for_status(Status.CLEANING, MODES) is None
+
+
+def test_modes_follow_the_configured_choice():
+    modes = {Status.MAINTAINING: Mode.SMART, Status.IN_USE: Mode.TURBO}
+    assert mode_for_status(Status.IN_USE, modes) is Mode.TURBO
+    assert mode_for_status(Status.MAINTAINING, modes) is Mode.SMART
 
 
 def test_preset_maps_back_to_mode():

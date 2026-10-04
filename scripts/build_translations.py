@@ -16,6 +16,7 @@ sys.path.insert(0, str(REPO))
 
 from custom_components.udespa_control.const import (
     ENTITY_KEYS,
+    MODE_KEYS,
     NUMBER_KEYS,
     PRESET_KEYS,
     SECTION_ENTITIES,
@@ -252,6 +253,18 @@ FIELDS: dict[str, tuple[str, str, str, str]] = {
     "src_water_tds": ("Water TDS", "Source for TDS, if you have one.", "Vand TDS", "Kilde til TDS, hvis du har en."),
     "src_ondilo_temperature": ("Ondilo temperature", "The Ondilo's water temperature. Display only; it updates hourly and no rule uses it.", "Ondilo temperatur", "Ondiloens vandtemperatur. Kun til visning; den opdateres hver time, og ingen regel bruger den."),
     "src_ondilo_battery": ("Ondilo battery", "Source for the Ondilo's battery level.", "Ondilo batteri", "Kilde til Ondiloens batteriniveau."),
+    "mode_maintaining": (
+        "Mode in Vedligeholder",
+        "The heat pump's mode while the status is Vedligeholder.",
+        "Mode i Vedligeholder",
+        "Varmepumpens tilstand, mens status er Vedligeholder.",
+    ),
+    "mode_in_use": (
+        "Mode in I brug",
+        "The heat pump's mode while the status is I brug.",
+        "Mode i I brug",
+        "Varmepumpens tilstand, mens status er I brug.",
+    ),
 }
 
 SECTIONS: dict[str, tuple[str, str, str, str]] = {
@@ -283,7 +296,7 @@ SECTIONS: dict[str, tuple[str, str, str, str]] = {
 
 SECTION_FIELDS: dict[str, tuple[str, ...]] = {
     SECTION_ENTITIES: ENTITY_KEYS,
-    SECTION_NUMBERS: (*NUMBER_KEYS, *PRESET_KEYS),
+    SECTION_NUMBERS: (*NUMBER_KEYS, *PRESET_KEYS, *MODE_KEYS),
     SECTION_TOGGLES: TOGGLE_KEYS,
     SECTION_SOURCES: SOURCE_KEYS,
 }

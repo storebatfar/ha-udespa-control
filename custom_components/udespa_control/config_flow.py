@@ -37,6 +37,7 @@ from .const import (
     CONF_SPA,
     DEFAULTS,
     DOMAIN,
+    MODE_KEYS,
     OPT_BACKUP_CHECK,
     OPT_BACKUP_MARGIN,
     OPT_CLEANING_ESTIMATE,
@@ -60,6 +61,7 @@ from .const import (
     SUGGESTED_ENTITIES,
     SUGGESTED_SOURCES,
     TOGGLE_KEYS,
+    Mode,
 )
 
 
@@ -146,6 +148,15 @@ def _numbers_schema(values: Mapping[str, Any]) -> vol.Schema:
     for key in PRESET_KEYS:
         fields[vol.Required(key, default=values.get(key, DEFAULTS[key]))] = (
             selector.TextSelector()
+        )
+    for key in MODE_KEYS:
+        fields[vol.Required(key, default=values.get(key, DEFAULTS[key]))] = (
+            selector.SelectSelector(
+                selector.SelectSelectorConfig(
+                    options=[mode.value for mode in Mode],
+                    mode=selector.SelectSelectorMode.DROPDOWN,
+                )
+            )
         )
     return vol.Schema(fields)
 

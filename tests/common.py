@@ -114,6 +114,7 @@ class FakeTub:
     COMPRESSOR_STOP_S = 69
     RUNNING_W = 1500.0
     IDLE_W = 8.0
+    PRESET_REPORT_S = 6
 
     def __init__(self, hass: HomeAssistant) -> None:
         self.hass = hass
@@ -121,6 +122,8 @@ class FakeTub:
         self.model_compressor = False
         self.fail_services: set[str] = set()
         self._compressor_timer: CALLBACK_TYPE | None = None
+        self.drop_presets = 0
+        self._report_timers: list[CALLBACK_TYPE] = []
 
     def install(
         self,
@@ -185,6 +188,9 @@ class FakeTub:
         if self._compressor_timer is not None:
             self._compressor_timer()
             self._compressor_timer = None
+        for cancel in self._report_timers:
+            cancel()
+        self._report_timers.clear()
 
     # --- setters --------------------------------------------------------------
 
@@ -282,6 +288,18 @@ class FakeTub:
 
         self._compressor_timer = async_call_later(self.hass, delay, _settled)
 
+    def _report_preset(self, preset: str | None):
+        """The heat pump's own report, overriding the optimistic write."""
+
+        @callback
+        def _report(_now: Any) -> None:
+            current = self.hass.states.get(HP)
+            self.hass.states.async_set(
+                HP, current.state, {**current.attributes, "preset_mode": preset}
+            )
+
+        return _report
+
     async def _handle(self, call: ServiceCall) -> None:
         self.calls.append(Call(dt_util.utcnow(), call.domain, call.service, dict(call.data)))
         if f"{call.domain}.{call.service}" in self.fail_services:
@@ -302,7 +320,13 @@ class FakeTub:
             if entity_id == HP:
                 self._compressor_follows(current.state, value)
         elif call.service == "set_preset_mode":
+            previous = attrs.get("preset_mode")
             attrs["preset_mode"] = call.data["preset_mode"]
+            if entity_id == HP and self.drop_presets > 0:
+                self.drop_presets -= 1
+                self._report_timers.append(
+                    async_call_later(self.hass, self.PRESET_REPORT_S, self._report_preset(previous))
+                )
         elif call.service == "set_temperature":
             attrs["temperature"] = call.data["temperature"]
         self.hass.states.async_set(entity_id, value, attrs)

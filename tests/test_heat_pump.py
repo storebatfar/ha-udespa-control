@@ -431,3 +431,19 @@ async def test_backup_running_is_visible_during_the_check(
     assert h.hp.backup_running
     await advance(hass, freezer, 100, step=5)
     assert not h.hp.backup_running
+
+
+async def test_switching_on_tells_the_mode_keeper(
+    hass: HomeAssistant, freezer: FrozenDateTimeFactory, tub: FakeTub, harness
+):
+    calls: list[int] = []
+    h = harness()
+    h.hp._on_switched_on = lambda: calls.append(1)
+    h.hp.start(ON)
+    await settle(hass)
+    assert calls == [1]
+    h.hp.start(HEAD_START)
+    await settle(hass)
+    assert calls == [1, 1]
+    await advance(hass, freezer, 31)  # re-sends of "heat" don't count as a new switch-on
+    assert calls == [1, 1]

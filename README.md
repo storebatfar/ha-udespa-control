@@ -41,6 +41,11 @@ is the spa setpoint plus the offset, capped at the heat pump's maximum.
 **Temperatursynk** shows whether the heat pump's target matches (`I sync`), differs
 (`Afviger`) or can't be read (`Ukendt`).
 
+**Heat-pump mode.** Choose the mode for Vedligeholder and for I brug under Configure → Tal.
+The heat pump can drop a mode change it gets as it switches on, so every mode change is
+checked after 10 s and resent (up to 3 attempts), and the mode is re-asserted after each
+switch-on. A change made on the heat pump itself is accepted.
+
 ## The rules
 
 Every rule is a pure function in `custom_components/udespa_control/rules.py`, documented

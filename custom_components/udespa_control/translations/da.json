@@ -57,7 +57,9 @@
               "cleaning_estimate_min": "Rengøring: visnings-estimat",
               "preset_quiet": "Preset for Lydløs",
               "preset_smart": "Preset for Smart",
-              "preset_turbo": "Preset for Turbo"
+              "preset_turbo": "Preset for Turbo",
+              "mode_maintaining": "Mode i Vedligeholder",
+              "mode_in_use": "Mode i I brug"
             },
             "data_description": {
               "off_delay_s": "Hvor længe spaen skal melde off, før varmepumpen slukkes.",
@@ -76,7 +78,9 @@
               "cleaning_estimate_min": "Vises på dashboards som forventet cyklus-længde.",
               "preset_quiet": "Varmepumpens preset for tilstanden Lydløs.",
               "preset_smart": "Varmepumpens preset for tilstanden Smart.",
-              "preset_turbo": "Varmepumpens preset for tilstanden Turbo."
+              "preset_turbo": "Varmepumpens preset for tilstanden Turbo.",
+              "mode_maintaining": "Varmepumpens tilstand, mens status er Vedligeholder.",
+              "mode_in_use": "Varmepumpens tilstand, mens status er I brug."
             }
           },
           "toggles": {
@@ -244,7 +248,9 @@
               "cleaning_estimate_min": "Rengøring: visnings-estimat",
               "preset_quiet": "Preset for Lydløs",
               "preset_smart": "Preset for Smart",
-              "preset_turbo": "Preset for Turbo"
+              "preset_turbo": "Preset for Turbo",
+              "mode_maintaining": "Mode i Vedligeholder",
+              "mode_in_use": "Mode i I brug"
             },
             "data_description": {
               "off_delay_s": "Hvor længe spaen skal melde off, før varmepumpen slukkes.",
@@ -263,7 +269,9 @@
               "cleaning_estimate_min": "Vises på dashboards som forventet cyklus-længde.",
               "preset_quiet": "Varmepumpens preset for tilstanden Lydløs.",
               "preset_smart": "Varmepumpens preset for tilstanden Smart.",
-              "preset_turbo": "Varmepumpens preset for tilstanden Turbo."
+              "preset_turbo": "Varmepumpens preset for tilstanden Turbo.",
+              "mode_maintaining": "Varmepumpens tilstand, mens status er Vedligeholder.",
+              "mode_in_use": "Varmepumpens tilstand, mens status er I brug."
             }
           },
           "toggles": {

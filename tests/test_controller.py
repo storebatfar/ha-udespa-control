@@ -10,6 +10,7 @@ from homeassistant.util import dt as dt_util
 
 from custom_components.udespa_control.const import (
     OPT_FAULT_STATUS,
+    OPT_MODE_IN_USE,
     OPT_WATCHDOG,
     Mode,
     Status,
@@ -339,6 +340,7 @@ async def test_automatic_mode_is_only_logged_in_watch_only_but_a_manual_pick_act
     assert tub.presets() == []
     assert any("(kun overvågning) Varmepumpe tilstand smart" in line for line in controller.recent)
     await controller.async_select_mode(Mode.TURBO)
+    await settle(hass)
     assert tub.presets() == ["quiet"]
 
 
@@ -573,3 +575,54 @@ async def test_offset_survives_a_restart(hass: HomeAssistant, tub: FakeTub, make
     await first.async_shutdown()
     second = await make_controller(active=False, entry=first.entry)
     assert second.state.offset == 0.5
+
+
+async def test_the_chosen_in_use_mode_is_sent(
+    hass: HomeAssistant, freezer: FrozenDateTimeFactory, tub: FakeTub, make_controller
+):
+    await make_controller(**{OPT_MODE_IN_USE: "Turbo"})
+    tub.spa(setpoint=38.0)
+    await advance(hass, freezer, 5)
+    assert tub.presets() == ["quiet"]
+
+
+async def test_replay_20261004_smart_survives_the_power_on(
+    hass: HomeAssistant, freezer: FrozenDateTimeFactory, tub: FakeTub, make_controller
+):
+    """11:18:20: status I brug sent "heat" and "smart" together; "quick" came back 6 s later."""
+    controller = await make_controller()
+    tub.drop_presets = 1
+    tub.circulation(True)
+    await settle(hass)
+    tub.spa(setpoint=39.0)
+    await advance(hass, freezer, 5)
+    assert tub.hp_modes() == ["heat"]
+    await advance(hass, freezer, 40, step=2)
+    assert hass.states.get(HP).attributes["preset_mode"] == "smart"
+    assert tub.presets() == ["smart", "smart"]
+    assert controller.mode is Mode.SMART
+
+
+async def test_watch_only_keeper_only_logs(
+    hass: HomeAssistant, freezer: FrozenDateTimeFactory, tub: FakeTub, make_controller
+):
+    controller = await make_controller(active=False)
+    tub.spa(setpoint=38.0)
+    await advance(hass, freezer, 6)
+    # the old automation sets Smart, as it does during the trial
+    hass.states.async_set(HP, "off", {**hass.states.get(HP).attributes, "preset_mode": "smart"})
+    await advance(hass, freezer, 40, step=2)
+    assert tub.calls == []
+    assert [line for line in controller.recent if "tilstand smart" in line] == [
+        "(kun overvågning) Varmepumpe tilstand smart: status er I brug"
+    ]
+    assert not any("afviste" in line for line in controller.recent)
+
+
+async def test_a_heat_pump_change_outside_the_window_is_adopted(
+    hass: HomeAssistant, tub: FakeTub, make_controller
+):
+    controller = await make_controller()
+    hass.states.async_set(HP, "off", {**hass.states.get(HP).attributes, "preset_mode": "quiet"})
+    await settle(hass)
+    assert controller.mode_keeper.wanted is Mode.TURBO

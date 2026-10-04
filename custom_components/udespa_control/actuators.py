@@ -35,6 +35,10 @@ class Actuators:
         self._record = record
         self._is_active = is_active
 
+    def would_send(self, *, deliberate: bool = False) -> bool:
+        """Whether a command would really be sent, or only logged (watch-only)."""
+        return deliberate or self._is_active()
+
     async def heat_pump_mode(self, hvac_mode: str, reason: str) -> bool:
         label = "Varmepumpe tændt" if hvac_mode == "heat" else "Varmepumpe slukket"
         return await self._send(
