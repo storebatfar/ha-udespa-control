@@ -49,7 +49,8 @@ switch-on. A change made on the heat pump itself is accepted.
 **Filter cycles.** During a filter cycle the heat pump stays on and regulates itself
 (Configure → Til/fra: *Varmepumpe tændt under filtercyklus*). A safety stop switches it
 off if the spa stays 1.0 °C over its setpoint for 5 minutes (both adjustable under Tal).
-The heat pump's own temperature calibration must be 0; 2.5 made it overshoot.
+The heat pump's own temperature calibration must be 0; 2.5 made it overshoot. After a safety stop the rest of
+that filter cycle runs as outside filter cycles (the heat pump follows the spa's heat calls).
 
 ## The rules
 
