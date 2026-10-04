@@ -10,6 +10,7 @@ from homeassistant.util import dt as dt_util
 
 from custom_components.udespa_control.const import (
     OPT_FAULT_STATUS,
+    OPT_FILTER_STAY_ON,
     OPT_MODE_IN_USE,
     OPT_WATCHDOG,
     Mode,
@@ -18,7 +19,16 @@ from custom_components.udespa_control.const import (
     Timer,
 )
 
-from .common import HEATER, HP, OUTDOOR, SPA, FakeTub, advance, settle
+from .common import (
+    FILTER_2,
+    HEATER,
+    HP,
+    OUTDOOR,
+    SPA,
+    FakeTub,
+    advance,
+    settle,
+)
 
 
 def _spa_setpoints(tub: FakeTub) -> list[float]:
@@ -66,7 +76,7 @@ async def test_a_trigger_without_a_decision_does_not_cancel_the_job(
     tub.spa(action="heating")
     await advance(hass, freezer, 30)
     tub.spa(temperature=35.5)
-    tub.filter_cycle(1, True)
+    hass.states.async_set(FILTER_2, "unavailable")
     tub.spa(action="idle")
     await advance(hass, freezer, 370, step=5)
     assert tub.hp_modes() == ["heat"]
@@ -117,7 +127,7 @@ async def test_circulation_stop_switches_off(hass: HomeAssistant, tub: FakeTub, 
 async def test_filter_cycle_without_call_switches_nothing_on(
     hass: HomeAssistant, freezer: FrozenDateTimeFactory, tub: FakeTub, make_controller
 ):
-    await make_controller()
+    await make_controller(**{OPT_FILTER_STAY_ON: False})
     tub.spa(temperature=38.0)
     tub.filter_cycle(1, True)
     tub.circulation(True)
@@ -650,3 +660,210 @@ async def test_return_from_unavailable_still_counts_as_a_crossing(
     tub.outdoor(3.0)
     await settle(hass)
     assert tub.heater_commands() == ["on"]
+
+
+# --- Rule F: filter cycles ---------------------------------------------------
+
+
+async def _filter_cycle_running(hass, freezer, tub):
+    """Circulation, then a filter cycle; the heat pump is on 10 s later.
+
+    The compressor is modelled so the on-job's verification passes and no
+    backup-heater alert muddies the assertions.
+    """
+    tub.model_compressor = True
+    tub.circulation(True)
+    await settle(hass)
+    tub.filter_cycle(1, True)
+    await advance(hass, freezer, 10)
+
+
+def _safety_stops(tub: FakeTub) -> int:
+    return sum(c.data["message"].startswith("Sikkerhedsstop") for c in tub.notifications())
+
+
+async def test_filter_cycle_switches_the_heat_pump_on_after_10_s(
+    hass: HomeAssistant, freezer: FrozenDateTimeFactory, tub: FakeTub, make_controller
+):
+    await make_controller()
+    tub.circulation(True)
+    await settle(hass)
+    tub.filter_cycle(1, True)
+    await advance(hass, freezer, 9)
+    assert tub.hp_modes() == []
+    await advance(hass, freezer, 1)
+    assert tub.hp_modes() == ["heat"]
+
+
+async def test_filter_start_without_circulation_does_nothing(
+    hass: HomeAssistant, freezer: FrozenDateTimeFactory, tub: FakeTub, make_controller
+):
+    await make_controller()
+    tub.filter_cycle(1, True)
+    await advance(hass, freezer, 15)
+    assert tub.hp_modes() == []
+
+
+async def test_circulation_and_filter_in_one_instant(
+    hass: HomeAssistant, freezer: FrozenDateTimeFactory, tub: FakeTub, make_controller
+):
+    """I brug + both sensors at once: rule F wins, so no head start (and no 70 s off)."""
+    tub.model_compressor = True
+    controller = await make_controller()
+    tub.spa(setpoint=38.0)
+    await advance(hass, freezer, 5)
+    assert controller.status is Status.IN_USE
+    tub.circulation(True)
+    tub.filter_cycle(1, True)
+    await advance(hass, freezer, 180, step=5)
+    assert tub.hp_modes()[0] == "heat"
+    assert "off" not in tub.hp_modes()
+    assert not any("hurtigstart" in line for line in controller.recent)
+
+
+async def test_filter_sensor_a_moment_after_circulation_cancels_the_head_start(
+    hass: HomeAssistant, freezer: FrozenDateTimeFactory, tub: FakeTub, make_controller
+):
+    """The other order: the head start runs, then the filter start replaces its job."""
+    tub.model_compressor = True
+    controller = await make_controller()
+    tub.spa(setpoint=38.0)
+    await advance(hass, freezer, 5)
+    tub.circulation(True)
+    await advance(hass, freezer, 3)
+    tub.filter_cycle(1, True)
+    await advance(hass, freezer, 180, step=5)
+    assert any("hurtigstart" in line for line in controller.recent)
+    assert tub.hp_modes()[0] == "heat"
+    assert "off" not in tub.hp_modes()
+
+
+async def test_satisfied_during_a_filter_cycle_keeps_it_on(
+    hass: HomeAssistant, freezer: FrozenDateTimeFactory, tub: FakeTub, make_controller
+):
+    await make_controller()
+    await _filter_cycle_running(hass, freezer, tub)
+    tub.spa(action="heating")
+    await settle(hass)
+    tub.spa(action="off", temperature=37.5)
+    await advance(hass, freezer, 30)
+    assert "off" not in tub.hp_modes()
+    tub.circulation(False)
+    await settle(hass)
+    assert tub.hp_modes()[-1] == "off"
+
+
+async def test_startup_mid_cycle_switches_on(hass: HomeAssistant, tub: FakeTub, make_controller):
+    tub.circulation(True)
+    tub.filter_cycle(1, True)
+    controller = await make_controller(active=False)
+    assert (
+        "(kun overvågning) Varmepumpe tændt: filtercyklus: varmepumpen står tændt hele cyklussen"
+        in controller.recent
+    )
+
+
+async def test_overtemp_stops_after_five_minutes(
+    hass: HomeAssistant, freezer: FrozenDateTimeFactory, tub: FakeTub, make_controller
+):
+    await make_controller()
+    await _filter_cycle_running(hass, freezer, tub)
+    tub.spa(temperature=38.0)
+    await advance(hass, freezer, 299, step=10)
+    assert "off" not in tub.hp_modes()
+    await advance(hass, freezer, 1)
+    assert tub.hp_modes()[-1] == "off"
+    assert _safety_stops(tub) == 1
+
+
+async def test_a_short_blip_is_no_overtemp(
+    hass: HomeAssistant, freezer: FrozenDateTimeFactory, tub: FakeTub, make_controller
+):
+    await make_controller()
+    await _filter_cycle_running(hass, freezer, tub)
+    tub.spa(temperature=38.0)
+    await advance(hass, freezer, 44)
+    tub.spa(temperature=37.5)
+    await advance(hass, freezer, 600, step=30)
+    assert "off" not in tub.hp_modes()
+    assert _safety_stops(tub) == 0
+
+
+async def test_half_a_degree_over_is_no_overtemp(
+    hass: HomeAssistant, freezer: FrozenDateTimeFactory, tub: FakeTub, make_controller
+):
+    await make_controller()
+    await _filter_cycle_running(hass, freezer, tub)
+    tub.spa(temperature=37.5)
+    await advance(hass, freezer, 900, step=30)
+    assert "off" not in tub.hp_modes()
+    assert _safety_stops(tub) == 0
+
+
+async def test_overtemp_only_during_a_filter_cycle(
+    hass: HomeAssistant, freezer: FrozenDateTimeFactory, tub: FakeTub, make_controller
+):
+    tub.model_compressor = True
+    await make_controller()
+    tub.circulation(True)
+    await settle(hass)
+    tub.spa(action="heating")
+    await settle(hass)
+    tub.spa(temperature=38.0)
+    await advance(hass, freezer, 600, step=30)
+    assert "off" not in tub.hp_modes()
+    assert _safety_stops(tub) == 0
+
+
+async def test_missing_temperature_is_no_overtemp(
+    hass: HomeAssistant, freezer: FrozenDateTimeFactory, tub: FakeTub, make_controller
+):
+    await make_controller()
+    await _filter_cycle_running(hass, freezer, tub)
+    tub.spa(temperature=None)
+    await advance(hass, freezer, 600, step=30)
+    assert _safety_stops(tub) == 0
+
+
+async def test_overtemp_needs_the_heat_pump_in_heat(
+    hass: HomeAssistant, freezer: FrozenDateTimeFactory, tub: FakeTub, make_controller
+):
+    controller = await make_controller()
+    await _filter_cycle_running(hass, freezer, tub)
+    await advance(hass, freezer, 120, step=10)  # the on-job has verified and ended
+    hass.states.async_set(HP, "unavailable", {})
+    tub.spa(temperature=38.0)
+    await advance(hass, freezer, 600, step=30)
+    assert _safety_stops(tub) == 0
+    assert controller.state.overtemp_since is None
+
+
+async def test_overtemp_cancelled_when_the_cycle_ends(
+    hass: HomeAssistant, freezer: FrozenDateTimeFactory, tub: FakeTub, make_controller
+):
+    controller = await make_controller()
+    await _filter_cycle_running(hass, freezer, tub)
+    tub.spa(temperature=38.0)
+    await advance(hass, freezer, 120, step=10)
+    tub.filter_cycle(1, False)
+    await advance(hass, freezer, 600, step=30)
+    assert _safety_stops(tub) == 0
+    assert controller.state.overtemp_since is None
+
+
+async def test_overtemp_timer_survives_a_restart(
+    hass: HomeAssistant, freezer: FrozenDateTimeFactory, tub: FakeTub, make_controller
+):
+    first = await make_controller()
+    await _filter_cycle_running(hass, freezer, tub)
+    tub.spa(temperature=38.0)
+    await advance(hass, freezer, 180, step=10)
+    assert first.state.overtemp_since is not None
+    await first.async_shutdown()
+    second = await make_controller(active=False, entry=first.entry)
+    await advance(hass, freezer, 119, step=7)
+    assert not any("sikkerhedsstop" in line for line in second.recent)
+    await advance(hass, freezer, 1)
+    assert sum("Varmepumpe slukket: sikkerhedsstop" in line for line in second.recent) == 1
+    await advance(hass, freezer, 600, step=30)
+    assert sum("Varmepumpe slukket: sikkerhedsstop" in line for line in second.recent) == 1

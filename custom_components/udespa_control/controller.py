@@ -37,9 +37,11 @@ from .actuators import Actuators
 from .cleaning import Cleaning
 from .const import (
     DOMAIN,
+    FILTER_START_DELAY_S,
     LAST_ACTION_MAX,
     STATUS_DELAY_S,
     CleaningPhase,
+    HeatAction,
     Mode,
     Status,
     SyncStatus,
@@ -51,6 +53,8 @@ from .mode import ModeKeeper
 from .reader import TubReader, as_float
 from .rules import (
     FOLLOWS_SETPOINT,
+    OVERTEMP_ALERT,
+    Decision,
     SpaView,
     desired_status,
     fmt_c,
@@ -62,6 +66,7 @@ from .rules import (
     mode_for_preset,
     mode_for_status,
     nudged_setpoint,
+    overtemp,
     resolve_status,
     snap_offset,
     watchdog_should_act,
@@ -107,6 +112,8 @@ class UdespaController:
         self._unsubs: list[CALLBACK_TYPE] = []
         self._tasks: set[asyncio.Task[Any]] = set()
         self._cancel_satisfied: CALLBACK_TYPE | None = None
+        self._cancel_filter: CALLBACK_TYPE | None = None
+        self._cancel_overtemp: CALLBACK_TYPE | None = None
         self._cancel_status: CALLBACK_TYPE | None = None
         self._pending_status: Status | None = None
         self._timer_days: tuple[int | None, int | None] = (None, None)
@@ -151,6 +158,7 @@ class UdespaController:
         self._decide(Trigger.STARTUP)
         if self._sync_needed():
             self._spawn(self._async_sync_target("opstart"), "temperature sync")
+        self._evaluate_overtemp()
 
     async def async_shutdown(self) -> None:
         if self._shut_down:
@@ -161,6 +169,10 @@ class UdespaController:
         self._unsubs.clear()
         self._cancel_satisfied_timer()
         self._cancel_status_timer()
+        for cancel in (self._cancel_filter, self._cancel_overtemp):
+            if cancel is not None:
+                cancel()
+        self._cancel_filter = self._cancel_overtemp = None
         await self.cleaning.async_shutdown()
         await self.heat_pump.async_shutdown()
         await self.mode_keeper.async_shutdown()
@@ -465,8 +477,11 @@ class UdespaController:
             self._on_heat_pump_power(new)
         elif entity_id == s.heat_pump:
             self.mode_keeper.adopt(self.reader.hp_preset())
+        elif entity_id in (s.filter_cycle_1, s.filter_cycle_2):
+            self._on_filter_cycle(old, new)
         elif entity_id == s.outdoor:
             self._on_outdoor(old, new)
+        self._evaluate_overtemp()
         self._notify_listeners()
 
     def _on_spa(self, old: State | None, new: State | None) -> None:
@@ -554,6 +569,83 @@ class UdespaController:
                 "frost",
             )
 
+    # --- filter cycles (rule F) ---------------------------------------------
+
+    def _on_filter_cycle(self, old: State | None, new: State | None) -> None:
+        """F1: a filter cycle that holds for FILTER_START_DELAY_S switches on."""
+        if self._cancel_filter is not None:
+            self._cancel_filter()
+            self._cancel_filter = None
+        was_on = old is not None and old.state == STATE_ON
+        if new is not None and new.state == STATE_ON and not was_on:
+            self._cancel_filter = async_call_later(
+                self.hass, FILTER_START_DELAY_S, self._filter_start_fired
+            )
+
+    @callback
+    def _filter_start_fired(self, _now: Any) -> None:
+        self._cancel_filter = None
+        if self.reader.filter_cycle() is None:
+            return
+        if self.heat_pump.last_action is HeatAction.ON:
+            return  # already on: circulation started inside the cycle, or a heat call
+        self._decide(Trigger.FILTER_START)
+
+    def _overtemp_condition(self) -> bool:
+        s = self.settings
+        return (
+            s.filter_stay_on
+            and self.reader.filter_cycle() is not None
+            and self.reader.hp_hvac_mode() == "heat"
+            and overtemp(self.reader.spa_temperature(), self.reader.setpoint(), s.overtemp_margin)
+        )
+
+    @callback
+    def _evaluate_overtemp(self) -> None:
+        """F5: start, resume or cancel the safety-stop timer.
+
+        The start time lives in storage, so a restart resumes the remaining
+        time instead of starting the 5 minutes over.
+        """
+        if not self._overtemp_condition():
+            if self.state.overtemp_since is not None:
+                self.state.overtemp_since = None
+                self._save()
+            if self._cancel_overtemp is not None:
+                self._cancel_overtemp()
+                self._cancel_overtemp = None
+            return
+        now = dt_util.utcnow()
+        if self.state.overtemp_since is None:
+            self.state.overtemp_since = now
+            self._save()
+        if self._cancel_overtemp is None:
+            held = (now - self.state.overtemp_since).total_seconds()
+            remaining = max(0.0, self.settings.overtemp_minutes * 60 - held)
+            self._cancel_overtemp = async_call_later(
+                self.hass, remaining, self._overtemp_fired
+            )
+
+    @callback
+    def _overtemp_fired(self, _now: Any) -> None:
+        self._cancel_overtemp = None
+        if not self._overtemp_condition():
+            self._evaluate_overtemp()
+            return
+        s = self.settings
+        temperature = self.reader.spa_temperature()
+        self.state.overtemp_since = None
+        self._save()
+        self._spawn(self.actuators.notify(*OVERTEMP_ALERT), "overtemp alert")
+        self.heat_pump.start(
+            Decision(
+                HeatAction.OFF,
+                f"sikkerhedsstop: spaen {fmt_c(temperature)} °C, mindst "
+                f"{fmt_num(s.overtemp_margin)} grad over setpunkt i "
+                f"{fmt_num(s.overtemp_minutes)} min under filtercyklus",
+            )
+        )
+
     # --- decisions ----------------------------------------------------------
 
     def _view(self) -> SpaView:
@@ -563,6 +655,7 @@ class UdespaController:
             temperature=self.reader.spa_temperature(),
             setpoint=self.reader.setpoint(),
             status=self.state.status,
+            filter_cycle=self.reader.filter_cycle() is not None,
         )
 
     def _decide(self, trigger: Trigger, previous_action: str | None = None) -> None:
@@ -571,6 +664,7 @@ class UdespaController:
             self._view(),
             head_start=self.settings.head_start,
             previous_action=previous_action,
+            filter_stay_on=self.settings.filter_stay_on,
         )
         if decision is None:
             return  # no decision never cancels a running job

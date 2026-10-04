@@ -66,6 +66,7 @@ class HeatPump:
         self._set_failure = set_failure
         self._on_switched_on = on_switched_on
         self._job: asyncio.Task[None] | None = None
+        self.last_action: HeatAction | None = None
         self._watchdog: asyncio.Task[None] | None = None
         self._backups = 0
 
@@ -87,6 +88,7 @@ class HeatPump:
         """Replace whatever job is running with this decision's job."""
         if self._job is not None:
             self._job.cancel()
+        self.last_action = decision.action
         job = {
             HeatAction.ON: self._async_on,
             HeatAction.OFF: self._async_off,
