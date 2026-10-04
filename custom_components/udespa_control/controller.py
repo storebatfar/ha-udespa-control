@@ -53,7 +53,6 @@ from .mode import ModeKeeper
 from .reader import TubReader, as_float
 from .rules import (
     FOLLOWS_SETPOINT,
-    OVERTEMP_ALERT,
     Decision,
     SpaView,
     desired_status,
@@ -67,6 +66,7 @@ from .rules import (
     mode_for_status,
     nudged_setpoint,
     overtemp,
+    overtemp_alert,
     resolve_status,
     snap_offset,
     watchdog_should_act,
@@ -595,9 +595,17 @@ class UdespaController:
         self._cancel_filter = None
         if self.reader.filter_cycle() is None:
             return
-        if self.heat_pump.last_action is HeatAction.ON:
+        if self.heat_pump.last_action is HeatAction.ON and (
+            self.heat_pump.busy or self.reader.hp_hvac_mode() == "heat"
+        ):
             return  # already on: circulation started inside the cycle, or a heat call
         self._decide(Trigger.FILTER_START)
+
+    def _filter_cycle_ended(self) -> bool:
+        """Every configured filter sensor is known off (no sensors: never in a cycle)."""
+        s = self.settings
+        sensors = [self.hass.states.get(e) for e in (s.filter_cycle_1, s.filter_cycle_2) if e]
+        return all(state is not None and state.state == STATE_OFF for state in sensors)
 
     def _overtemp_reading(self) -> bool | None:
         """F5's condition: True over, False known not over, None unknown.
@@ -607,13 +615,10 @@ class UdespaController:
         the heat pump in heat but resting, is not the heat pump overheating it.
         """
         s = self.settings
-        if not s.filter_stay_on:
+        if not s.filter_stay_on or self.state.overtemp_stopped:
             return False
         if self.reader.filter_cycle() is None:
-            sensors = [self.hass.states.get(e) for e in (s.filter_cycle_1, s.filter_cycle_2) if e]
-            if all(state is not None and state.state == STATE_OFF for state in sensors):
-                return False
-            return None
+            return False if self._filter_cycle_ended() else None
         mode = self.reader.hp_hvac_mode()
         if mode is None:
             return None
@@ -635,6 +640,9 @@ class UdespaController:
         The start time lives in storage, so a restart resumes the remaining
         time instead of starting the 5 minutes over.
         """
+        if self.state.overtemp_stopped and self._filter_cycle_ended():
+            self.state.overtemp_stopped = False  # a new cycle gets rule F again
+            self._save()
         reading = self._overtemp_reading()
         if reading is not True:
             if self._cancel_overtemp is not None:
@@ -673,8 +681,14 @@ class UdespaController:
         s = self.settings
         temperature = self.reader.spa_temperature()
         self.state.overtemp_since = self.state.overtemp_seen = None
+        # One stop per cycle: the rest of it runs as outside filter cycles, so
+        # a sensor flap can't switch back on and watch-only doesn't re-alert.
+        self.state.overtemp_stopped = True
         self._save()
-        self._spawn(self.actuators.notify(*OVERTEMP_ALERT), "overtemp alert")
+        self._spawn(
+            self.actuators.notify(*overtemp_alert(s.overtemp_margin, s.overtemp_minutes)),
+            "overtemp alert",
+        )
         self.heat_pump.start(
             Decision(
                 HeatAction.OFF,
@@ -693,7 +707,8 @@ class UdespaController:
             temperature=self.reader.spa_temperature(),
             setpoint=self.reader.setpoint(),
             status=self.state.status,
-            filter_cycle=self.reader.filter_cycle() is not None,
+            filter_cycle=self.reader.filter_cycle() is not None
+            and not self.state.overtemp_stopped,
         )
 
     def _decide(self, trigger: Trigger, previous_action: str | None = None) -> None:

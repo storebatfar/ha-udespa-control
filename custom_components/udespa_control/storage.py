@@ -49,6 +49,7 @@ class StoredState:
     bath_water_reset_at: datetime | None = None
     overtemp_since: datetime | None = None
     overtemp_seen: datetime | None = None  # last reading that confirmed the hold
+    overtemp_stopped: bool = False  # F5 fired: rule F is off for the rest of this cycle
 
     def to_dict(self) -> dict[str, Any]:
         data = asdict(self)
@@ -103,6 +104,7 @@ class StoredState:
             bath_water_reset_at=_dt("bath_water_reset_at"),
             overtemp_since=_dt("overtemp_since"),
             overtemp_seen=_dt("overtemp_seen"),
+            overtemp_stopped=_bool("overtemp_stopped"),
         )
 
 
