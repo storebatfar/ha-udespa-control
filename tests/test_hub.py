@@ -249,3 +249,80 @@ async def test_the_retired_ondilo_temperature_copy_is_removed(hass: HomeAssistan
     assert registry.async_get(old.entity_id) is None
     assert eid(hass, entry, "sensor", "ondilo_temperature") is None
     assert await hass.config_entries.async_unload(entry.entry_id)
+
+
+# --- 2026.10.10: the water temperature keeps its latest reading ---------------
+
+
+async def test_water_temperature_keeps_the_latest_reading_when_the_spa_drops_out(
+    hass: HomeAssistant, tub: FakeTub, entry
+):
+    tub.spa(temperature=36.5)
+    await settle(hass)
+    fresh = state(hass, entry, "sensor", "water_temperature")
+    assert float(fresh.state) == 36.5
+    assert fresh.attributes["stale"] is False
+    tub.spa(state="unavailable")
+    await settle(hass)
+    kept = state(hass, entry, "sensor", "water_temperature")
+    assert float(kept.state) == 36.5
+    assert kept.attributes["stale"] is True
+    assert kept.attributes["last_reading"] == fresh.attributes["last_reading"]
+
+
+async def test_water_temperature_keeps_the_latest_reading_when_the_value_is_missing(
+    hass: HomeAssistant, tub: FakeTub, entry
+):
+    tub.spa(temperature=37.0)
+    await settle(hass)
+    tub.spa(temperature=None)
+    await settle(hass)
+    kept = state(hass, entry, "sensor", "water_temperature")
+    assert float(kept.state) == 37.0
+    assert kept.attributes["stale"] is True
+    tub.spa(temperature=36.5)
+    await settle(hass)
+    back = state(hass, entry, "sensor", "water_temperature")
+    assert float(back.state) == 36.5
+    assert back.attributes["stale"] is False
+
+
+async def test_other_copies_still_go_unavailable(hass: HomeAssistant, tub: FakeTub, entry):
+    tub.spa(state="unavailable")
+    await settle(hass)
+    assert state(hass, entry, "sensor", "setpoint").state == "unavailable"
+
+
+async def test_water_temperature_restores_the_latest_reading_after_a_restart(
+    hass: HomeAssistant, tub: FakeTub
+):
+    """HA restarts while the spa is offline: the card still has the last reading."""
+    from homeassistant.core import State
+    from pytest_homeassistant_custom_component.common import (
+        mock_restore_cache_with_extra_data,
+    )
+
+    entry = MockConfigEntry(
+        domain=DOMAIN, title="Udespa", unique_id=SPA, data=dict(ENTITY_DATA), options=dict(DEFAULTS)
+    )
+    entry.add_to_hass(hass)
+    entity_id = er.async_get(hass).async_get_or_create(
+        "sensor", DOMAIN, f"{entry.entry_id}_water_temperature", config_entry=entry
+    ).entity_id
+    mock_restore_cache_with_extra_data(
+        hass,
+        [
+            (
+                State(entity_id, "36.5", {"stale": False, "last_reading": "2026-10-05T12:00:00+00:00"}),
+                {"native_value": 36.5, "native_unit_of_measurement": "°C"},
+            )
+        ],
+    )
+    tub.spa(state="unavailable")
+    assert await hass.config_entries.async_setup(entry.entry_id)
+    await settle(hass)
+    restored = hass.states.get(entity_id)
+    assert float(restored.state) == 36.5
+    assert restored.attributes["stale"] is True
+    assert restored.attributes["last_reading"] == "2026-10-05T12:00:00+00:00"
+    assert await hass.config_entries.async_unload(entry.entry_id)

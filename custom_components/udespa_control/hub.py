@@ -16,6 +16,7 @@ from homeassistant.components.binary_sensor import (
     BinarySensorEntity,
 )
 from homeassistant.components.sensor import (
+    RestoreSensor,
     SensorDeviceClass,
     SensorEntity,
     SensorStateClass,
@@ -30,6 +31,7 @@ from homeassistant.const import (
 )
 from homeassistant.core import Event, EventStateChangedData, State, callback
 from homeassistant.helpers.event import async_track_state_change_event
+from homeassistant.util import dt as dt_util
 from homeassistant.util.unit_conversion import PowerConverter
 
 from .const import (
@@ -83,10 +85,15 @@ class HubCopy:
     attribute: str | None = None  # read this attribute (°C) instead of the state
     power: bool = False  # whole watts
     diagnostic: bool = False
+    # Keep the latest reading, marked stale, while the source has none, and
+    # across a restart. Only for display: no rule reads a hub copy.
+    keep_last: bool = False
 
 
 HUB_COPIES: tuple[HubCopy, ...] = (
-    HubCopy("water_temperature", lambda s: s.spa, attribute="current_temperature"),
+    HubCopy(
+        "water_temperature", lambda s: s.spa, attribute="current_temperature", keep_last=True
+    ),
     HubCopy("setpoint", lambda s: s.spa, attribute="temperature"),
     HubCopy("hp_inlet", lambda s: s.heat_pump, attribute="current_temperature"),
     HubCopy("hp_outlet", _source(CONF_SRC_HP_OUTLET)),
@@ -149,11 +156,13 @@ class _SourceFollower(UdespaEntity):
         raise NotImplementedError
 
 
-class HubCopySensor(_SourceFollower, SensorEntity):
+class HubCopySensor(_SourceFollower, RestoreSensor):
     def __init__(self, controller: UdespaController, copy: HubCopy, source: str) -> None:
         super().__init__(controller, copy.key)
         self._copy = copy
         self._sources = (source,)
+        self._last_value: int | float | None = None
+        self._last_reading: str | None = None
         if copy.diagnostic:
             self._attr_entity_category = EntityCategory.DIAGNOSTIC
         if copy.attribute is not None:
@@ -161,7 +170,36 @@ class HubCopySensor(_SourceFollower, SensorEntity):
             self._attr_native_unit_of_measurement = UnitOfTemperature.CELSIUS
             self._attr_state_class = SensorStateClass.MEASUREMENT
 
+    async def async_added_to_hass(self) -> None:
+        if self._copy.keep_last:
+            data = await self.async_get_last_sensor_data()
+            last = await self.async_get_last_state()
+            if data is not None and isinstance(data.native_value, int | float):
+                self._last_value = data.native_value
+                if last is not None:
+                    self._last_reading = last.attributes.get("last_reading")
+        await super().async_added_to_hass()
+
     def _refresh(self) -> None:
+        self._read()
+        if not self._copy.keep_last:
+            return
+        if self._attr_available and self._attr_native_value is not None:
+            self._last_value = self._attr_native_value
+            self._last_reading = dt_util.utcnow().isoformat()
+            stale = False
+        elif self._last_value is not None:
+            self._attr_available = True
+            self._attr_native_value = self._last_value
+            stale = True
+        else:
+            return
+        self._attr_extra_state_attributes = {
+            "stale": stale,
+            "last_reading": self._last_reading,
+        }
+
+    def _read(self) -> None:
         state = self.hass.states.get(self._sources[0])
         self._attr_available = _usable(state)
         if not self._attr_available:
