@@ -35,6 +35,8 @@ heat demand and circulation; heat-pump inlet, outlet, temperature rise, compress
 power and ambient (plus diagnostics); heater and circulation power; water quality
 from the Ondilo. Each copy follows a source chosen under Configure → Datakilder;
 an empty field means no copy.
+The water temperature keeps its latest reading while the spa is offline (and across a
+restart), with `stale: true` and the time of that reading in `last_reading`.
 
 **Varmepumpe offset** (0 / 0.5 / 1.0 °C) adds a little extra: the heat pump's target
 is the spa setpoint plus the offset, capped at the heat pump's maximum.
