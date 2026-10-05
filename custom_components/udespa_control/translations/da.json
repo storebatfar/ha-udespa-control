@@ -120,7 +120,6 @@
               "src_water_ph": "Vand pH",
               "src_water_orp": "Vand ORP",
               "src_water_tds": "Vand TDS",
-              "src_ondilo_temperature": "Ondilo temperatur",
               "src_ondilo_battery": "Ondilo batteri"
             },
             "data_description": {
@@ -137,7 +136,6 @@
               "src_water_ph": "Den pH-værdi dashboards viser (den korrigerede).",
               "src_water_orp": "Kilde til ORP-værdien.",
               "src_water_tds": "Kilde til TDS, hvis du har en.",
-              "src_ondilo_temperature": "Ondiloens vandtemperatur. Kun til visning; den opdateres hver time, og ingen regel bruger den.",
               "src_ondilo_battery": "Kilde til Ondiloens batteriniveau."
             }
           }
@@ -313,7 +311,6 @@
               "src_water_ph": "Vand pH",
               "src_water_orp": "Vand ORP",
               "src_water_tds": "Vand TDS",
-              "src_ondilo_temperature": "Ondilo temperatur",
               "src_ondilo_battery": "Ondilo batteri"
             },
             "data_description": {
@@ -330,7 +327,6 @@
               "src_water_ph": "Den pH-værdi dashboards viser (den korrigerede).",
               "src_water_orp": "Kilde til ORP-værdien.",
               "src_water_tds": "Kilde til TDS, hvis du har en.",
-              "src_ondilo_temperature": "Ondiloens vandtemperatur. Kun til visning; den opdateres hver time, og ingen regel bruger den.",
               "src_ondilo_battery": "Kilde til Ondiloens batteriniveau."
             }
           }
@@ -466,9 +462,6 @@
       },
       "water_tds": {
         "name": "Vand TDS"
-      },
-      "ondilo_temperature": {
-        "name": "Ondilo temperatur"
       },
       "ondilo_battery": {
         "name": "Ondilo batteri"

@@ -257,7 +257,6 @@ FIELDS: dict[str, tuple[str, str, str, str]] = {
     "src_water_ph": ("Water pH", "The pH value the dashboards show (the corrected one).", "Vand pH", "Den pH-værdi dashboards viser (den korrigerede)."),
     "src_water_orp": ("Water ORP", "Source for the ORP value.", "Vand ORP", "Kilde til ORP-værdien."),
     "src_water_tds": ("Water TDS", "Source for TDS, if you have one.", "Vand TDS", "Kilde til TDS, hvis du har en."),
-    "src_ondilo_temperature": ("Ondilo temperature", "The Ondilo's water temperature. Display only; it updates hourly and no rule uses it.", "Ondilo temperatur", "Ondiloens vandtemperatur. Kun til visning; den opdateres hver time, og ingen regel bruger den."),
     "src_ondilo_battery": ("Ondilo battery", "Source for the Ondilo's battery level.", "Ondilo batteri", "Kilde til Ondiloens batteriniveau."),
     "mode_maintaining": (
         "Mode in Vedligeholder",
@@ -396,7 +395,6 @@ ENTITY_NAMES: dict[str, dict[str, tuple[str, str]]] = {
         "water_ph": ("Water pH", "Vand pH"),
         "water_orp": ("Water ORP", "Vand ORP"),
         "water_tds": ("Water TDS", "Vand TDS"),
-        "ondilo_temperature": ("Ondilo temperature", "Ondilo temperatur"),
         "ondilo_battery": ("Ondilo battery", "Ondilo batteri"),
     },
     "binary_sensor": {

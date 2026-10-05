@@ -14,7 +14,14 @@ from . import UdespaConfigEntry
 from .const import CONF_SRC_HP_OUTLET, DOMAIN, CleaningPhase, Status, SyncStatus, Timer
 from .controller import UdespaController
 from .entity import UdespaEntity
-from .hub import HUB_COPIES, RISE_KEY, HubCopySensor, HubDemandSensor, HubRiseSensor
+from .hub import (
+    HUB_COPIES,
+    RETIRED_KEYS,
+    RISE_KEY,
+    HubCopySensor,
+    HubDemandSensor,
+    HubRiseSensor,
+)
 
 
 async def async_setup_entry(
@@ -41,6 +48,8 @@ async def async_setup_entry(
         entities.append(HubRiseSensor(controller, outlet))
     else:
         _forget(hass, entry, RISE_KEY)
+    for key in RETIRED_KEYS:
+        _forget(hass, entry, key)
     async_add_entities(entities)
 
 

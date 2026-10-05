@@ -44,7 +44,6 @@ from .const import (
     CONF_SRC_HP_IPM,
     CONF_SRC_HP_OUTLET,
     CONF_SRC_ONDILO_BATTERY,
-    CONF_SRC_ONDILO_TEMPERATURE,
     CONF_SRC_WATER_ORP,
     CONF_SRC_WATER_PH,
     CONF_SRC_WATER_TDS,
@@ -107,11 +106,13 @@ HUB_COPIES: tuple[HubCopy, ...] = (
     HubCopy("water_ph", _source(CONF_SRC_WATER_PH)),
     HubCopy("water_orp", _source(CONF_SRC_WATER_ORP)),
     HubCopy("water_tds", _source(CONF_SRC_WATER_TDS)),
-    HubCopy("ondilo_temperature", _source(CONF_SRC_ONDILO_TEMPERATURE)),
     HubCopy("ondilo_battery", _source(CONF_SRC_ONDILO_BATTERY)),
 )
 
 RISE_KEY = "hp_temperature_rise"
+# Copies that no longer exist; their registry entries are removed at start-up.
+# ondilo_temperature (2026.10.9): the Ondilo's temperature is not used for anything.
+RETIRED_KEYS: tuple[str, ...] = ("ondilo_temperature",)
 
 
 def _device_class(value: Any) -> SensorDeviceClass | None:

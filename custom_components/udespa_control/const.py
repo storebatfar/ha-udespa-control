@@ -67,7 +67,6 @@ CONF_SRC_CIRCULATION_POWER: Final = "src_circulation_power"
 CONF_SRC_WATER_PH: Final = "src_water_ph"
 CONF_SRC_WATER_ORP: Final = "src_water_orp"
 CONF_SRC_WATER_TDS: Final = "src_water_tds"
-CONF_SRC_ONDILO_TEMPERATURE: Final = "src_ondilo_temperature"
 CONF_SRC_ONDILO_BATTERY: Final = "src_ondilo_battery"
 
 SOURCE_KEYS: Final = (
@@ -84,7 +83,6 @@ SOURCE_KEYS: Final = (
     CONF_SRC_WATER_PH,
     CONF_SRC_WATER_ORP,
     CONF_SRC_WATER_TDS,
-    CONF_SRC_ONDILO_TEMPERATURE,
     CONF_SRC_ONDILO_BATTERY,
 )
 
@@ -102,7 +100,6 @@ SUGGESTED_SOURCES: Final[dict[str, str]] = {
     CONF_SRC_CIRCULATION_POWER: "sensor.udespa_kwh_maler_power_phase_1",
     CONF_SRC_WATER_PH: "sensor.udespa_ph_korrigeret",
     CONF_SRC_WATER_ORP: "sensor.udespa_oxydo_reduction_potential",
-    CONF_SRC_ONDILO_TEMPERATURE: "sensor.udespa_temperatur",
     CONF_SRC_ONDILO_BATTERY: "sensor.udespa_batteri",
 }
 
