@@ -50,7 +50,7 @@ switch-on. A change made on the heat pump itself is accepted.
 own inlet temperature (Configure → Til/fra: *Varmepumpe tændt under filtercyklus*). Its own
 temperature calibration must be 0; 2.5 made it overshoot. There is no safety stop on the
 spa's reading: while the heat pump runs, the spa's sensor sees the warm water coming back
-from it (39 °C on a cold night while the tub itself was 36.7), not the tub.
+from it (39 °C on a cold night while the heat pump's inlet read 36.5), not the tub.
 
 ## The rules
 
