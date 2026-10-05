@@ -120,7 +120,6 @@
               "src_water_ph": "Water pH",
               "src_water_orp": "Water ORP",
               "src_water_tds": "Water TDS",
-              "src_ondilo_temperature": "Ondilo temperature",
               "src_ondilo_battery": "Ondilo battery"
             },
             "data_description": {
@@ -137,7 +136,6 @@
               "src_water_ph": "The pH value the dashboards show (the corrected one).",
               "src_water_orp": "Source for the ORP value.",
               "src_water_tds": "Source for TDS, if you have one.",
-              "src_ondilo_temperature": "The Ondilo's water temperature. Display only; it updates hourly and no rule uses it.",
               "src_ondilo_battery": "Source for the Ondilo's battery level."
             }
           }
@@ -313,7 +311,6 @@
               "src_water_ph": "Water pH",
               "src_water_orp": "Water ORP",
               "src_water_tds": "Water TDS",
-              "src_ondilo_temperature": "Ondilo temperature",
               "src_ondilo_battery": "Ondilo battery"
             },
             "data_description": {
@@ -330,7 +327,6 @@
               "src_water_ph": "The pH value the dashboards show (the corrected one).",
               "src_water_orp": "Source for the ORP value.",
               "src_water_tds": "Source for TDS, if you have one.",
-              "src_ondilo_temperature": "The Ondilo's water temperature. Display only; it updates hourly and no rule uses it.",
               "src_ondilo_battery": "Source for the Ondilo's battery level."
             }
           }
@@ -466,9 +462,6 @@
       },
       "water_tds": {
         "name": "Water TDS"
-      },
-      "ondilo_temperature": {
-        "name": "Ondilo temperature"
       },
       "ondilo_battery": {
         "name": "Ondilo battery"

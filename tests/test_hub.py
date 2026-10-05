@@ -21,7 +21,6 @@ from custom_components.udespa_control.const import (
     CONF_SRC_HP_IPM,
     CONF_SRC_HP_OUTLET,
     CONF_SRC_ONDILO_BATTERY,
-    CONF_SRC_ONDILO_TEMPERATURE,
     CONF_SRC_WATER_ORP,
     CONF_SRC_WATER_PH,
     CONF_SRC_WATER_TDS,
@@ -45,7 +44,6 @@ SOURCES = {
     CONF_SRC_WATER_PH: ("sensor.src_ph", "7.4", {}),
     CONF_SRC_WATER_ORP: ("sensor.src_orp", "593", {"unit_of_measurement": "mV"}),
     CONF_SRC_WATER_TDS: ("sensor.src_tds", "900", {"unit_of_measurement": "ppm"}),
-    CONF_SRC_ONDILO_TEMPERATURE: ("sensor.src_ondilo_temp", "36.8", {"unit_of_measurement": "°C", "device_class": "temperature"}),
     CONF_SRC_ONDILO_BATTERY: ("sensor.src_battery", "63", {"unit_of_measurement": "%", "device_class": "battery"}),
 }
 
@@ -89,7 +87,7 @@ SENSOR_KEYS = (
     "hp_outlet", "hp_temperature_rise", "hp_compressor", "hp_power", "hp_ambient",
     "heater_power", "circulation_power", "hp_coil", "hp_exhaust", "hp_ipm", "hp_fan",
     "hp_eev", "hp_compressor_current", "water_ph", "water_orp", "water_tds",
-    "ondilo_temperature", "ondilo_battery",
+    "ondilo_battery",
 )
 
 
@@ -228,3 +226,26 @@ async def test_whole_numbers_stay_whole(hass: HomeAssistant, entry):
     assert state(hass, entry, "sensor", "ondilo_battery").state == "63"
     assert state(hass, entry, "sensor", "hp_eev").state == "350"
     assert state(hass, entry, "sensor", "water_ph").state == "7.4"
+
+
+async def test_the_retired_ondilo_temperature_copy_is_removed(hass: HomeAssistant, tub: FakeTub):
+    """2026.10.9: the Ondilo's temperature is not used for anything, so its copy goes,
+    and an installation that had it loses the registry entry at start-up."""
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        title="Udespa",
+        unique_id=SPA,
+        data={**ENTITY_DATA, "src_ondilo_temperature": "sensor.udespa_temperatur"},
+        options=dict(DEFAULTS),
+    )
+    entry.add_to_hass(hass)
+    hass.states.async_set("sensor.udespa_temperatur", "36.8", {"unit_of_measurement": "°C"})
+    registry = er.async_get(hass)
+    old = registry.async_get_or_create(
+        "sensor", DOMAIN, f"{entry.entry_id}_ondilo_temperature", config_entry=entry
+    )
+    assert await hass.config_entries.async_setup(entry.entry_id)
+    await settle(hass)
+    assert registry.async_get(old.entity_id) is None
+    assert eid(hass, entry, "sensor", "ondilo_temperature") is None
+    assert await hass.config_entries.async_unload(entry.entry_id)

@@ -99,7 +99,7 @@ def test_no_sources_by_default():
 def test_suggested_sources_are_known_keys_without_tds():
     assert set(SUGGESTED_SOURCES) <= set(SOURCE_KEYS)
     assert CONF_SRC_WATER_TDS not in SUGGESTED_SOURCES
-    assert len(SOURCE_KEYS) == 15
+    assert len(SOURCE_KEYS) == 14  # ondilo_temperature retired in 2026.10.9
 
 
 def test_modes_default_to_todays_pair():
