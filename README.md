@@ -46,11 +46,11 @@ The heat pump can drop a mode change it gets as it switches on, so every mode ch
 checked after 10 s and resent (up to 3 attempts), and the mode is re-asserted after each
 switch-on. A change made on the heat pump itself is accepted.
 
-**Filter cycles.** During a filter cycle the heat pump stays on and regulates itself
-(Configure → Til/fra: *Varmepumpe tændt under filtercyklus*). A safety stop switches it
-off if the spa stays 1.0 °C over its setpoint for 5 minutes (both adjustable under Tal).
-The heat pump's own temperature calibration must be 0; 2.5 made it overshoot. After a safety stop the rest of
-that filter cycle runs as outside filter cycles (the heat pump follows the spa's heat calls).
+**Filter cycles.** During a filter cycle the heat pump stays on and regulates itself on its
+own inlet temperature (Configure → Til/fra: *Varmepumpe tændt under filtercyklus*). Its own
+temperature calibration must be 0; 2.5 made it overshoot. There is no safety stop on the
+spa's reading: while the heat pump runs, the spa's sensor sees the warm water coming back
+from it (39 °C on a cold night while the tub itself was 36.7), not the tub.
 
 ## The rules
 

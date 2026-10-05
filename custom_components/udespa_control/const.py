@@ -135,8 +135,6 @@ OPT_WATCHDOG: Final = "watchdog"
 OPT_NOTIFICATIONS: Final = "notifications"
 OPT_FAULT_STATUS: Final = "fault_status"
 OPT_FILTER_STAY_ON: Final = "filter_stay_on"
-OPT_OVERTEMP_MARGIN: Final = "overtemp_margin_c"
-OPT_OVERTEMP_MINUTES: Final = "overtemp_minutes"
 
 NUMBER_KEYS: Final = (
     OPT_OFF_DELAY,
@@ -153,8 +151,6 @@ NUMBER_KEYS: Final = (
     OPT_IN_USE_THRESHOLD,
     OPT_CLEANING_MAX,
     OPT_CLEANING_ESTIMATE,
-    OPT_OVERTEMP_MARGIN,
-    OPT_OVERTEMP_MINUTES,
 )
 PRESET_KEYS: Final = (OPT_PRESET_QUIET, OPT_PRESET_SMART, OPT_PRESET_TURBO)
 MODE_KEYS: Final = (OPT_MODE_MAINTAINING, OPT_MODE_IN_USE)
@@ -194,8 +190,6 @@ DEFAULTS: Final[dict[str, Any]] = {
     OPT_NOTIFICATIONS: True,
     OPT_FAULT_STATUS: True,
     OPT_FILTER_STAY_ON: True,
-    OPT_OVERTEMP_MARGIN: 1.0,
-    OPT_OVERTEMP_MINUTES: 5,
 }
 
 SECTION_ENTITIES: Final = "entities"
@@ -224,11 +218,6 @@ MODE_ATTEMPTS: Final = 3
 # Rule F: the filter-cycle sensor must hold "on" this long before the heat
 # pump is switched on, so the circulation state has caught up.
 FILTER_START_DELAY_S: Final = 10
-# F5 latch: cleared once every filter sensor has been off this long (a short
-# "off" blip mustn't re-arm rule F), or after LATCH_EXPIRY_S whatever happens
-# (a filter sensor dead for good mustn't disable rule F forever).
-LATCH_CLEAR_S: Final = 600
-LATCH_EXPIRY_S: Final = 12 * 3600
 DEFAULT_HP_LIMITS: Final = (6.0, 41.0)
 
 DEMAND_LABELS: Final[dict[str, str]] = {

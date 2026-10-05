@@ -49,8 +49,6 @@ from .const import (
     OPT_HP_ON_W,
     OPT_IN_USE_THRESHOLD,
     OPT_OFF_DELAY,
-    OPT_OVERTEMP_MARGIN,
-    OPT_OVERTEMP_MINUTES,
     OPT_RETRY_MINUTES,
     OPT_WATCHDOG_CIRCULATION,
     OPT_WATCHDOG_INTERVAL,
@@ -119,8 +117,6 @@ NUMBER_FIELDS: dict[str, Any] = {
     OPT_IN_USE_THRESHOLD: _number(0.05, 5, 0.05, "°C"),
     OPT_CLEANING_MAX: _number(1, 120, 1, "min"),
     OPT_CLEANING_ESTIMATE: _number(1, 120, 1, "min"),
-    OPT_OVERTEMP_MARGIN: _number(0.5, 5, 0.5, "°C"),
-    OPT_OVERTEMP_MINUTES: _number(1, 60, 1, "min"),
 }
 
 

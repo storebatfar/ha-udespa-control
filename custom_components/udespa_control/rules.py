@@ -376,20 +376,3 @@ def round_power(value: float | None) -> int | None:
 
 def demand_label(action: Any) -> str | None:
     return DEMAND_LABELS.get(action) if isinstance(action, str) else None
-
-
-def overtemp(temperature: float | None, setpoint: float | None, margin: float) -> bool:
-    """F5: the spa is at least `margin` over its setpoint. Unknown never counts."""
-    if temperature is None or setpoint is None:
-        return False
-    return round(temperature - setpoint, 3) >= margin
-
-
-def overtemp_alert(margin: float, minutes: float) -> tuple[str, str]:
-    """F5's alert, worded from the configured margin and hold time."""
-    message = (
-        f"Sikkerhedsstop: spaen har været mindst {fmt_num(margin)} grad over setpunkt i "
-        f"{fmt_num(minutes)} minutter under filtercyklussen. Varmepumpen slukkes. "
-        "Tjek varmepumpens temperaturkalibrering (skal være 0)."
-    )
-    return _HP_WARNING_TITLE, message

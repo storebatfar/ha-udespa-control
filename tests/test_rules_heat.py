@@ -24,8 +24,6 @@ from custom_components.udespa_control.rules import (
     heat_pump_stopped,
     heater_running,
     off_failed_alert,
-    overtemp,
-    overtemp_alert,
     watchdog_should_act,
 )
 
@@ -363,23 +361,3 @@ def test_toggle_off_keeps_todays_behaviour():
     assert fact(Trigger.IN_USE, fspa(status=Status.IN_USE), stay=False) is HeatAction.HEAD_START
 
 
-def test_overtemp():
-    assert overtemp(38.0, 37.0, 1.0)
-    assert not overtemp(37.5, 37.0, 1.0)
-    assert not overtemp(None, 37.0, 1.0)
-    assert not overtemp(38.0, None, 1.0)
-    assert overtemp(37.5, 37.0, 0.5)
-
-
-def test_overtemp_alert_text():
-    title, message = overtemp_alert(1.0, 5.0)
-    assert title == "⚠️ Udespa Varmepumpe"
-    assert message.startswith(
-        "Sikkerhedsstop: spaen har været mindst 1 grad over setpunkt i 5 minutter under"
-    )
-    assert "kalibrering" in message
-
-
-def test_overtemp_alert_text_follows_the_settings():
-    _title, message = overtemp_alert(1.5, 10.0)
-    assert "mindst 1,5 grad over setpunkt i 10 minutter" in message

@@ -147,19 +147,18 @@ async def test_2144_head_start(
 async def test_1400_filter_cycle_keeps_the_heat_pump_on(
     hass: HomeAssistant, freezer: FrozenDateTimeFactory, tub: FakeTub, make_controller
 ):
-    """Rule F: the heat pump stays on; the old overshoot (38-38.5 over 37) trips F5.
+    """Rule F: the heat pump stays on for the whole cycle, whatever the spa reads.
 
-    The spa reads at least 1 grad over its setpoint from the start; the hold
-    starts when the compressor runs (90 s), so the safety stop fires at 390 s.
+    The spa's reading during circulation is heat-pump outlet water, so 38-38.5
+    over a 37 setpoint is no reason to stop it (the safety stop was dropped in
+    2026.10.8 after the false stop on 2026-10-05 02:09).
     """
     _calm_warm_tub(tub)
     await make_controller()
     t0 = dt_util.utcnow()
-    await play(hass, freezer, tub, FILTER_CYCLE_1400, until=389)
+    await play(hass, freezer, tub, FILTER_CYCLE_1400, until=900)
     assert hvac_timeline(tub, t0) == [(0, "heat")]  # circulation started inside the cycle
-    await advance(hass, freezer, 1)
-    assert hvac_timeline(tub, t0) == [(0, "heat"), (390, "off")]
-    assert [c.data["message"][:15] for c in tub.notifications()] == ["Sikkerhedsstop:"]
+    assert tub.notifications() == []
     assert tub.presets() == []
     assert tub.heater_commands() == []
 
