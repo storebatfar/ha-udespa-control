@@ -29,9 +29,6 @@ _DATETIME_FIELDS = (
     "cleaning_started_at",
     "filter_reset_at",
     "bath_water_reset_at",
-    "overtemp_since",
-    "overtemp_seen",
-    "overtemp_stopped_at",
 )
 
 
@@ -48,13 +45,6 @@ class StoredState:
     cleaning_started_at: datetime | None = None
     filter_reset_at: datetime | None = None
     bath_water_reset_at: datetime | None = None
-    overtemp_since: datetime | None = None
-    overtemp_seen: datetime | None = None  # last reading that confirmed the hold
-    overtemp_stopped_at: datetime | None = None  # F5 fired: rule F off for the rest of the cycle
-
-    @property
-    def overtemp_stopped(self) -> bool:
-        return self.overtemp_stopped_at is not None
 
     def to_dict(self) -> dict[str, Any]:
         data = asdict(self)
@@ -107,9 +97,6 @@ class StoredState:
             cleaning_started_at=_dt("cleaning_started_at"),
             filter_reset_at=_dt("filter_reset_at"),
             bath_water_reset_at=_dt("bath_water_reset_at"),
-            overtemp_since=_dt("overtemp_since"),
-            overtemp_seen=_dt("overtemp_seen"),
-            overtemp_stopped_at=_dt("overtemp_stopped_at"),
         )
 
 

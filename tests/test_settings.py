@@ -19,8 +19,6 @@ from custom_components.udespa_control.const import (
     OPT_FILTER_STAY_ON,
     OPT_MODE_IN_USE,
     OPT_MODE_MAINTAINING,
-    OPT_OVERTEMP_MARGIN,
-    OPT_OVERTEMP_MINUTES,
     OPT_PRESET_TURBO,
     OPT_RETRY_MINUTES,
     OPT_WATCHDOG,
@@ -122,12 +120,10 @@ def test_an_unknown_mode_falls_back_to_the_default():
 def test_filter_cycle_defaults():
     s = Settings.from_mappings(DATA, {})
     assert s.filter_stay_on is True
-    assert (s.overtemp_margin, s.overtemp_minutes) == (1.0, 5.0)
 
 
 def test_filter_cycle_options():
     s = Settings.from_mappings(
-        DATA, {OPT_FILTER_STAY_ON: False, OPT_OVERTEMP_MARGIN: 1.5, OPT_OVERTEMP_MINUTES: 10}
+        DATA, {OPT_FILTER_STAY_ON: False}
     )
     assert s.filter_stay_on is False
-    assert (s.overtemp_margin, s.overtemp_minutes) == (1.5, 10.0)
