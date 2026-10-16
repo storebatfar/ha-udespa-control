@@ -22,6 +22,8 @@ from .const import (
     DOMAIN,
     HEAD_START_OFF_ATTEMPTS,
     HEAD_START_OFF_SETTLE_S,
+    RESTART_REST_S,
+    RESTART_VERIFY_S,
     SPA_CALLING,
     VERIFY_POLL_S,
     BackupKind,
@@ -205,7 +207,39 @@ class HeatPump:
         finally:
             self._backups -= 1
 
+    async def _async_restart(self) -> bool:
+        """Off, rest, heat again. True when no backup is needed after all.
+
+        Skipped without circulation: then there is no water to heat and no
+        evidence either way, so the backup decides as before.
+        """
+        if not self._reader.circulation_on():
+            return False
+        self._record("Varmepumpe genstartes: står i heat uden at starte")
+        await self._actuators.heat_pump_mode("off", "genstart: varmepumpen starter ikke")
+        await async_sleep(self._hass, RESTART_REST_S)
+        if not self._reader.circulation_on():
+            self._record("Genstart afbrudt: cirkulationen er stoppet")
+            return True
+        await self._actuators.heat_pump_mode(
+            "heat", f"genstart: tændt igen efter {fmt_num(RESTART_REST_S / 60)} min hvile"
+        )
+        self._switched_on()
+        for _ in range(RESTART_VERIFY_S // VERIFY_POLL_S):
+            if self._running():
+                self._record("Genstart: varmepumpen kører igen")
+                await self.async_recover()
+                return True
+            await async_sleep(self._hass, VERIFY_POLL_S)
+        if self._running():
+            self._record("Genstart: varmepumpen kører igen")
+            await self.async_recover()
+            return True
+        return False
+
     async def _async_backup(self, kind: BackupKind) -> None:
+        if await self._async_restart():
+            return
         if self._s.backup_heater:
             await self._actuators.heater(
                 True, "backup: varmepumpen kører ikke, og vandet er under setpunkt"

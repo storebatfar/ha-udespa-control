@@ -80,9 +80,10 @@ async def test_a_trigger_without_a_decision_does_not_cancel_the_job(
     tub.spa(temperature=35.5)
     hass.states.async_set(FILTER_2, "unavailable")
     tub.spa(action="idle")
-    await advance(hass, freezer, 370, step=5)
-    assert tub.hp_modes() == ["heat"]
-    assert tub.heater_commands() == ["on"]  # the job lived on to its backup
+    await advance(hass, freezer, 670, step=5)
+    # The job lived on through its restart attempt to its backup.
+    assert tub.hp_modes() == ["heat", "off", "heat"]
+    assert tub.heater_commands() == ["on"]
 
 
 async def test_satisfied_switches_off_after_the_off_delay(
@@ -221,9 +222,13 @@ async def test_watchdog_fires_after_ten_minutes_of_cold_silent_circulation(
     tub.spa(temperature=35.0)
     tub.circulation(True)
     await advance(hass, freezer, 595, step=5)
-    assert tub.heater_commands() == []
+    assert tub.hp_modes() == []
     await advance(hass, freezer, 5)
-    assert tub.heater_commands() == ["on"]
+    assert tub.hp_modes() == ["off"]  # first a restart attempt
+    assert tub.heater_commands() == []
+    await advance(hass, freezer, 300, step=5)
+    assert tub.hp_modes() == ["off", "heat"]
+    assert tub.heater_commands() == ["on"]  # the pump stayed dead: backup
     await advance(hass, freezer, 150, step=5)
     assert len(tub.notifications()) == 1
     assert controller.failure_open
@@ -484,8 +489,8 @@ async def test_frost_crossing_during_the_backup_check_keeps_the_heater_on(
     await make_controller()
     tub.spa(temperature=35.0)
     tub.circulation(True)
-    await advance(hass, freezer, 600, step=10)
-    assert tub.heater_commands() == ["on"]  # the watchdog's backup
+    await advance(hass, freezer, 960, step=10)
+    assert tub.heater_commands() == ["on"]  # the watchdog's backup, after its restart
     tub.outdoor(4.0)
     await settle(hass)
     tub.outdoor(6.0)

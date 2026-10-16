@@ -123,6 +123,9 @@ class FakeTub:
         self.fail_services: set[str] = set()
         self._compressor_timer: CALLBACK_TYPE | None = None
         self.drop_presets = 0
+        # The next N "heat" commands leave the compressor in standby, as the real
+        # heat pump did when told "heat" shortly after an "off" (2026-10-15).
+        self.refuse_starts = 0
         self._report_timers: list[CALLBACK_TYPE] = []
 
     def install(
@@ -275,6 +278,9 @@ class FakeTub:
         self.shutdown()
         running = self._power() > 500
         if mode == "heat" and not running:
+            if self.refuse_starts > 0:
+                self.refuse_starts -= 1
+                return
             delay, watts = self.COMPRESSOR_START_S, self.RUNNING_W
         elif mode == "off" and running:
             delay, watts = self.COMPRESSOR_STOP_S, self.IDLE_W

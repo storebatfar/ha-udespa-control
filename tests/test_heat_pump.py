@@ -447,3 +447,74 @@ async def test_switching_on_tells_the_mode_keeper(
     assert calls == [1, 1]
     await advance(hass, freezer, 31)  # re-sends of "heat" don't count as a new switch-on
     assert calls == [1, 1]
+
+
+# --- 2026.10.11: restart a stuck heat pump before the backup -----------------
+
+
+def _stuck(tub: FakeTub, refusals: int) -> None:
+    """Water circulates, the spa is cold, and the heat pump ignores `refusals` starts."""
+    tub.model_compressor = True
+    tub.refuse_starts = refusals
+    tub.circulation(True)
+    tub.spa(temperature=35.0, setpoint=37.0)
+
+
+async def test_a_stuck_heat_pump_is_restarted_before_the_backup(
+    hass: HomeAssistant, freezer: FrozenDateTimeFactory, tub: FakeTub, harness
+):
+    _stuck(tub, 1)
+    h = harness()
+    h.hp.start(ON)
+    await advance(hass, freezer, 245, step=5)
+    assert tub.hp_modes() == ["heat", "off"]  # the retry window ran out: restart
+    await advance(hass, freezer, 120, step=5)
+    assert tub.hp_modes() == ["heat", "off", "heat"]
+    await advance(hass, freezer, 120, step=5)
+    assert tub.heater_commands() == []
+    assert tub.notifications() == []
+    assert h.failure is False
+    assert any("genstart" in line.lower() for line in h.journal)
+
+
+async def test_a_heat_pump_that_stays_dead_still_gets_the_backup(
+    hass: HomeAssistant, freezer: FrozenDateTimeFactory, tub: FakeTub, harness
+):
+    _stuck(tub, 5)
+    h = harness()
+    h.hp.start(ON)
+    await advance(hass, freezer, 900, step=5)
+    assert tub.hp_modes() == ["heat", "off", "heat"]
+    assert tub.heater_commands() == ["on"]
+    assert len(tub.notifications()) == 1
+    assert h.failure is True
+
+
+async def test_the_restart_stands_down_when_circulation_stops(
+    hass: HomeAssistant, freezer: FrozenDateTimeFactory, tub: FakeTub, harness
+):
+    _stuck(tub, 1)
+    h = harness()
+    h.hp.start_watchdog_backup("varmepumpen trækker ikke strøm")
+    await advance(hass, freezer, 60, step=5)
+    tub.circulation(False)
+    await advance(hass, freezer, 600, step=5)
+    assert tub.hp_modes() == ["off"]  # no "heat" without water flow
+    assert tub.heater_commands() == []
+    assert tub.notifications() == []
+    assert h.failure is False
+
+
+async def test_the_watchdog_restarts_a_stuck_heat_pump_too(
+    hass: HomeAssistant, freezer: FrozenDateTimeFactory, tub: FakeTub, harness
+):
+    """2026-10-15 16:56: in heat, not running, cold spa -> restart, not a fault."""
+    _stuck(tub, 0)  # already sitting in heat without running; a fresh start works
+    hass.states.async_set(HP, "heat", dict(hass.states.get(HP).attributes))
+    h = harness()
+    h.hp.start_watchdog_backup("varmepumpen trækker ikke strøm")
+    await advance(hass, freezer, 400, step=5)
+    assert tub.hp_modes() == ["off", "heat"]
+    assert tub.heater_commands() == []
+    assert tub.notifications() == []
+    assert h.failure is False
