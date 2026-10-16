@@ -120,6 +120,9 @@ class UdespaController:
             hass,
             self.settings,
             state=lambda: self.state,
+            in_use=lambda: self._desired_status() is Status.IN_USE,
+            paused=lambda: self.state.status is Status.CLEANING,
+            active=lambda: self.state.active,
             rest_temperature=lambda: self.state.rest_temperature,
             notify=self.actuators.notify,
             lower=self._async_lower_to_rest,
@@ -168,7 +171,7 @@ class UdespaController:
         """D18 then A8, once HA is running (or at once, on a reload)."""
         self.cleaning.recover_after_restart()
         self._resolve_status_now("opstart")
-        self.in_use.resume(self.state.status)
+        self.in_use.refresh()
         self._decide(Trigger.STARTUP)
         if self._sync_needed():
             self._spawn(self._async_sync_target("opstart"), "temperature sync")
@@ -306,18 +309,22 @@ class UdespaController:
 
     async def async_confirm_in_use(self) -> None:
         """The dashboard's "Stadig i brug" button."""
-        self.in_use.confirm(self.state.status, "knap")
+        self.in_use.confirm("knap")
 
     @callback
     def _on_notification_action(self, event: Event) -> None:
         if InUseGuard.is_confirm_action(event.data):
-            self.in_use.confirm(self.state.status, "telefon")
+            self.in_use.confirm("telefon")
 
-    async def _async_lower_to_rest(self) -> None:
+    async def _async_lower_to_rest(self) -> bool:
         """No answer to the I brug question: back to the rest temperature."""
+        if not self.reader.spa_available():
+            self.record("Sænkning til hvile ikke mulig: spaen er ikke tilgængelig")
+            return False
         low, high = self.reader.spa_limits()
-        target = min(max(self.state.rest_temperature, low), high)
-        await self.actuators.spa_setpoint(
+        # The spa takes half degrees.
+        target = min(max(round(self.state.rest_temperature * 2) / 2, low), high)
+        return await self.actuators.spa_setpoint(
             target, "ingen svar på I brug-påmindelsen", deliberate=False
         )
 
@@ -423,7 +430,7 @@ class UdespaController:
         self.record(f"Status {new}: {reason}")
         if (mode := mode_for_status(new, self.settings.modes)) is not None:
             self.mode_keeper.apply(mode, f"status er {new}")
-        self.in_use.status_changed(new)
+        self.in_use.refresh()
         if new is Status.IN_USE:
             self._decide(Trigger.IN_USE)
 
