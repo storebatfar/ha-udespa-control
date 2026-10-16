@@ -178,6 +178,24 @@ FIELDS: dict[str, tuple[str, str, str, str]] = {
         "I brug-grænse over hviletemperatur",
         "Status er I brug, når setpunktet ligger mere end dette over hviletemperaturen.",
     ),
+    "in_use_reminder_h": (
+        "In use reminder after",
+        "Hours in I brug before a push asks whether the tub is still in use. 0 turns the reminder off.",
+        "I brug-påmindelse efter",
+        "Timer i I brug, før en notifikation spørger, om spaen stadig bruges. 0 slår påmindelsen fra.",
+    ),
+    "in_use_repeat_h": (
+        "Ask again after confirming",
+        "Hours after a \"still in use\" before the next question.",
+        "Spørg igen efter bekræftelse",
+        "Timer efter et \"stadig i brug\", før næste spørgsmål.",
+    ),
+    "in_use_grace_min": (
+        "Lower after unanswered reminder",
+        "Minutes to answer the question; without an answer the spa goes back to the rest temperature.",
+        "Sænk efter ubesvaret påmindelse",
+        "Minutter til at svare; uden svar sættes spaen ned til hviletemperaturen.",
+    ),
     "cleaning_max_min": (
         "Cleaning: maximum per cycle",
         "Backstop if the spa never stops the cleaning pump itself (it normally does after 15 min).",
@@ -362,6 +380,7 @@ ENTITY_NAMES: dict[str, dict[str, tuple[str, str]]] = {
         "stop_cleaning": ("Stop cleaning", "Stop rengøring"),
         "reset_filter_timer": ("Reset filter timer", "Nulstil filter timer"),
         "reset_bath_water_timer": ("Reset bath water timer", "Nulstil badevand timer"),
+        "still_in_use": ("Still in use", "Stadig i brug"),
     },
     "switch": {
         "frost_protection": ("Frost protection", "Frostsikring"),

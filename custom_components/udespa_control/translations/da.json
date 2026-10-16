@@ -53,6 +53,9 @@
               "watchdog_circulation_min": "Vagthund: cirkulation mindst",
               "frost_limit_c": "Frostgrænse",
               "in_use_threshold_c": "I brug-grænse over hviletemperatur",
+              "in_use_reminder_h": "I brug-påmindelse efter",
+              "in_use_repeat_h": "Spørg igen efter bekræftelse",
+              "in_use_grace_min": "Sænk efter ubesvaret påmindelse",
               "cleaning_max_min": "Rengøring: max pr. cyklus",
               "cleaning_estimate_min": "Rengøring: visnings-estimat",
               "preset_quiet": "Preset for Lydløs",
@@ -74,6 +77,9 @@
               "watchdog_circulation_min": "Vagthunden handler først, når cirkulationen har kørt så længe.",
               "frost_limit_c": "Frostsikringen tænder varmelegemet under denne udetemperatur og slukker det over.",
               "in_use_threshold_c": "Status er I brug, når setpunktet ligger mere end dette over hviletemperaturen.",
+              "in_use_reminder_h": "Timer i I brug, før en notifikation spørger, om spaen stadig bruges. 0 slår påmindelsen fra.",
+              "in_use_repeat_h": "Timer efter et \"stadig i brug\", før næste spørgsmål.",
+              "in_use_grace_min": "Minutter til at svare; uden svar sættes spaen ned til hviletemperaturen.",
               "cleaning_max_min": "Sikkerhedsgrænse, hvis spaen ikke selv stopper rengøringspumpen (normalt efter 15 min).",
               "cleaning_estimate_min": "Vises på dashboards som forventet cyklus-længde.",
               "preset_quiet": "Varmepumpens preset for tilstanden Lydløs.",
@@ -244,6 +250,9 @@
               "watchdog_circulation_min": "Vagthund: cirkulation mindst",
               "frost_limit_c": "Frostgrænse",
               "in_use_threshold_c": "I brug-grænse over hviletemperatur",
+              "in_use_reminder_h": "I brug-påmindelse efter",
+              "in_use_repeat_h": "Spørg igen efter bekræftelse",
+              "in_use_grace_min": "Sænk efter ubesvaret påmindelse",
               "cleaning_max_min": "Rengøring: max pr. cyklus",
               "cleaning_estimate_min": "Rengøring: visnings-estimat",
               "preset_quiet": "Preset for Lydløs",
@@ -265,6 +274,9 @@
               "watchdog_circulation_min": "Vagthunden handler først, når cirkulationen har kørt så længe.",
               "frost_limit_c": "Frostsikringen tænder varmelegemet under denne udetemperatur og slukker det over.",
               "in_use_threshold_c": "Status er I brug, når setpunktet ligger mere end dette over hviletemperaturen.",
+              "in_use_reminder_h": "Timer i I brug, før en notifikation spørger, om spaen stadig bruges. 0 slår påmindelsen fra.",
+              "in_use_repeat_h": "Timer efter et \"stadig i brug\", før næste spørgsmål.",
+              "in_use_grace_min": "Minutter til at svare; uden svar sættes spaen ned til hviletemperaturen.",
               "cleaning_max_min": "Sikkerhedsgrænse, hvis spaen ikke selv stopper rengøringspumpen (normalt efter 15 min).",
               "cleaning_estimate_min": "Vises på dashboards som forventet cyklus-længde.",
               "preset_quiet": "Varmepumpens preset for tilstanden Lydløs.",
@@ -371,6 +383,9 @@
       },
       "reset_bath_water_timer": {
         "name": "Nulstil badevand timer"
+      },
+      "still_in_use": {
+        "name": "Stadig i brug"
       }
     },
     "switch": {

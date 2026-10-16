@@ -36,6 +36,9 @@ from .const import (
     OPT_HEATER_ON_W,
     OPT_HP_OFF_W,
     OPT_HP_ON_W,
+    OPT_IN_USE_GRACE,
+    OPT_IN_USE_REMINDER,
+    OPT_IN_USE_REPEAT,
     OPT_IN_USE_THRESHOLD,
     OPT_MODE_IN_USE,
     OPT_MODE_MAINTAINING,
@@ -89,6 +92,9 @@ class Settings:
     watchdog_circulation_min: float
     frost_limit: float
     in_use_threshold: float
+    in_use_reminder_h: float
+    in_use_repeat_h: float
+    in_use_grace_min: float
     cleaning_max_min: float
     cleaning_estimate_min: float
     presets: Mapping[Mode, str]
@@ -137,6 +143,9 @@ class Settings:
             watchdog_circulation_min=float(o[OPT_WATCHDOG_CIRCULATION]),
             frost_limit=float(o[OPT_FROST_LIMIT]),
             in_use_threshold=float(o[OPT_IN_USE_THRESHOLD]),
+            in_use_reminder_h=float(o[OPT_IN_USE_REMINDER]),
+            in_use_repeat_h=float(o[OPT_IN_USE_REPEAT]),
+            in_use_grace_min=float(o[OPT_IN_USE_GRACE]),
             cleaning_max_min=float(o[OPT_CLEANING_MAX]),
             cleaning_estimate_min=float(o[OPT_CLEANING_ESTIMATE]),
             presets={

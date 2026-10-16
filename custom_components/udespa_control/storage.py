@@ -27,6 +27,9 @@ from .rules import snap_offset
 
 _DATETIME_FIELDS = (
     "cleaning_started_at",
+    "in_use_since",
+    "in_use_due_at",
+    "in_use_asked_at",
     "filter_reset_at",
     "bath_water_reset_at",
 )
@@ -43,6 +46,9 @@ class StoredState:
     failure_open: bool = False
     cleaning_phase: CleaningPhase = CleaningPhase.IDLE
     cleaning_started_at: datetime | None = None
+    in_use_since: datetime | None = None  # I brug reminder: when I brug began
+    in_use_due_at: datetime | None = None  # next question
+    in_use_asked_at: datetime | None = None  # question sent, answer pending
     filter_reset_at: datetime | None = None
     bath_water_reset_at: datetime | None = None
 
@@ -95,6 +101,9 @@ class StoredState:
             failure_open=_bool("failure_open"),
             cleaning_phase=phase,
             cleaning_started_at=_dt("cleaning_started_at"),
+            in_use_since=_dt("in_use_since"),
+            in_use_due_at=_dt("in_use_due_at"),
+            in_use_asked_at=_dt("in_use_asked_at"),
             filter_reset_at=_dt("filter_reset_at"),
             bath_water_reset_at=_dt("bath_water_reset_at"),
         )
