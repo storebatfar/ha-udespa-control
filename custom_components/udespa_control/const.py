@@ -196,11 +196,12 @@ ALL_SECTIONS: Final = (SECTION_ENTITIES, SECTION_NUMBERS, SECTION_TOGGLES, SECTI
 
 # --- Fixed timings (measured; not settings) -----------------------------------
 VERIFY_POLL_S: Final = 15  # one verification step; retry window / 15 = attempts
-# Before the backup: off, rest, heat again. The heat pump can stay in standby
-# when told "heat" shortly after an "off" (2026-10-04, 2026-10-15) but starts
-# after a rest. The rest clears the 69 s soft stop; the compressor then starts
-# 85-96 s after "heat".
-RESTART_REST_S: Final = 120
+# Before the backup: off, rest, heat again. The heat pump stayed in standby when
+# told "heat" 2 min after an "off" (2026-10-15) and after rapid cycling
+# (2026-10-04), but started after a long rest. 10 min is a guess that is clearly
+# longer than the gap that failed; the next real lock-up will tell. The
+# compressor starts 85-96 s after "heat".
+RESTART_REST_S: Final = 600
 RESTART_VERIFY_S: Final = 180
 HEAD_START_OFF_ATTEMPTS: Final = 3
 # The compressor starts 85-96 s after "on". A head-start off at 70 s is checked
