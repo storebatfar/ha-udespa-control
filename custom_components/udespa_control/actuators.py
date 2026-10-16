@@ -76,13 +76,15 @@ class Actuators:
             {ATTR_ENTITY_ID: self._s.heater},
         )
 
-    async def spa_setpoint(self, temperature: float, reason: str) -> bool:
+    async def spa_setpoint(
+        self, temperature: float, reason: str, *, deliberate: bool = True
+    ) -> bool:
         return await self._send(
             f"Spa setpunkt {fmt_c(temperature)} °C: {reason}",
             "climate",
             "set_temperature",
             {ATTR_ENTITY_ID: self._s.spa, "temperature": temperature},
-            deliberate=True,
+            deliberate=deliberate,
         )
 
     async def cleaning_pump(self, on: bool, reason: str) -> bool:
@@ -95,14 +97,17 @@ class Actuators:
             deliberate=True,
         )
 
-    async def notify(self, title: str, message: str) -> bool:
+    async def notify(
+        self, title: str, message: str, data: dict[str, Any] | None = None
+    ) -> bool:
         text = f"Notifikation: {title} — {message}"
         if not self._s.notifications:
             self._record(f"{text} (ikke sendt: notifikationer er slået fra)")
             return False
-        return await self._send(
-            text, "notify", self._s.notify, {"title": title, "message": message}
-        )
+        payload: dict[str, Any] = {"title": title, "message": message}
+        if data:
+            payload["data"] = data
+        return await self._send(text, "notify", self._s.notify, payload)
 
     async def _send(
         self,

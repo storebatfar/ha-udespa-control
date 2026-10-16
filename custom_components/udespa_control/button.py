@@ -30,6 +30,7 @@ BUTTONS: tuple[UdespaButtonDescription, ...] = (
         press=lambda c: c.async_nudge_setpoint(-SETPOINT_STEP),
     ),
     UdespaButtonDescription(key="start_cleaning", press=lambda c: c.async_start_cleaning()),
+    UdespaButtonDescription(key="still_in_use", press=lambda c: c.async_confirm_in_use()),
     UdespaButtonDescription(key="stop_cleaning", press=lambda c: c.async_stop_cleaning()),
     UdespaButtonDescription(
         key="reset_filter_timer", press=lambda c: c.async_reset_timer(Timer.FILTER)

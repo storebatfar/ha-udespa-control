@@ -49,6 +49,7 @@ from .const import (
     Trigger,
 )
 from .heat_pump import HeatPump
+from .in_use import InUseGuard
 from .mode import ModeKeeper
 from .reader import TubReader, as_float
 from .rules import (
@@ -115,6 +116,17 @@ class UdespaController:
         self._timer_days: tuple[int | None, int | None] = (None, None)
         self._shut_down = False
         self.cleaning = Cleaning(self)
+        self.in_use = InUseGuard(
+            hass,
+            self.settings,
+            state=lambda: self.state,
+            rest_temperature=lambda: self.state.rest_temperature,
+            notify=self.actuators.notify,
+            lower=self._async_lower_to_rest,
+            record=self.record,
+            save=self._save,
+            spawn=self._spawn,
+        )
 
     # --- lifecycle ----------------------------------------------------------
 
@@ -145,12 +157,18 @@ class UdespaController:
             async_track_time_interval(self.hass, self._timer_tick, timedelta(minutes=1))
         )
         self._timer_days = self._current_timer_days()
+        self._unsubs.append(
+            self.hass.bus.async_listen(
+                "mobile_app_notification_action", self._on_notification_action
+            )
+        )
         self._unsubs.append(async_at_started(self.hass, self._async_started))
 
     async def _async_started(self, _hass: HomeAssistant) -> None:
         """D18 then A8, once HA is running (or at once, on a reload)."""
         self.cleaning.recover_after_restart()
         self._resolve_status_now("opstart")
+        self.in_use.resume(self.state.status)
         self._decide(Trigger.STARTUP)
         if self._sync_needed():
             self._spawn(self._async_sync_target("opstart"), "temperature sync")
@@ -170,6 +188,7 @@ class UdespaController:
         await self.cleaning.async_shutdown()
         await self.heat_pump.async_shutdown()
         await self.mode_keeper.async_shutdown()
+        self.in_use.shutdown()
         for task in list(self._tasks):
             task.cancel()
         for task in list(self._tasks):
@@ -285,6 +304,23 @@ class UdespaController:
             return
         await self.actuators.spa_setpoint(target, "hævet" if delta > 0 else "sænket")
 
+    async def async_confirm_in_use(self) -> None:
+        """The dashboard's "Stadig i brug" button."""
+        self.in_use.confirm(self.state.status, "knap")
+
+    @callback
+    def _on_notification_action(self, event: Event) -> None:
+        if InUseGuard.is_confirm_action(event.data):
+            self.in_use.confirm(self.state.status, "telefon")
+
+    async def _async_lower_to_rest(self) -> None:
+        """No answer to the I brug question: back to the rest temperature."""
+        low, high = self.reader.spa_limits()
+        target = min(max(self.state.rest_temperature, low), high)
+        await self.actuators.spa_setpoint(
+            target, "ingen svar på I brug-påmindelsen", deliberate=False
+        )
+
     async def async_reset_timer(self, timer: Timer) -> None:
         now = dt_util.utcnow()
         if timer is Timer.FILTER:
@@ -387,6 +423,7 @@ class UdespaController:
         self.record(f"Status {new}: {reason}")
         if (mode := mode_for_status(new, self.settings.modes)) is not None:
             self.mode_keeper.apply(mode, f"status er {new}")
+        self.in_use.status_changed(new)
         if new is Status.IN_USE:
             self._decide(Trigger.IN_USE)
 

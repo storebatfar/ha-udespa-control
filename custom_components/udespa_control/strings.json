@@ -53,6 +53,9 @@
               "watchdog_circulation_min": "Watchdog: circulation at least",
               "frost_limit_c": "Frost limit",
               "in_use_threshold_c": "In use above rest temperature",
+              "in_use_reminder_h": "In use reminder after",
+              "in_use_repeat_h": "Ask again after confirming",
+              "in_use_grace_min": "Lower after unanswered reminder",
               "cleaning_max_min": "Cleaning: maximum per cycle",
               "cleaning_estimate_min": "Cleaning: display estimate",
               "preset_quiet": "Preset for Lydløs",
@@ -74,6 +77,9 @@
               "watchdog_circulation_min": "The watchdog only acts after circulation has run this long.",
               "frost_limit_c": "Frost protection switches the heater on below this outdoor temperature and off above it.",
               "in_use_threshold_c": "Status is I brug when the setpoint is more than this above the rest temperature.",
+              "in_use_reminder_h": "Hours in I brug before a push asks whether the tub is still in use. 0 turns the reminder off.",
+              "in_use_repeat_h": "Hours after a \"still in use\" before the next question.",
+              "in_use_grace_min": "Minutes to answer the question; without an answer the spa goes back to the rest temperature.",
               "cleaning_max_min": "Backstop if the spa never stops the cleaning pump itself (it normally does after 15 min).",
               "cleaning_estimate_min": "Shown to dashboards as the expected cycle length.",
               "preset_quiet": "The heat pump's preset for the Lydløs mode.",
@@ -244,6 +250,9 @@
               "watchdog_circulation_min": "Watchdog: circulation at least",
               "frost_limit_c": "Frost limit",
               "in_use_threshold_c": "In use above rest temperature",
+              "in_use_reminder_h": "In use reminder after",
+              "in_use_repeat_h": "Ask again after confirming",
+              "in_use_grace_min": "Lower after unanswered reminder",
               "cleaning_max_min": "Cleaning: maximum per cycle",
               "cleaning_estimate_min": "Cleaning: display estimate",
               "preset_quiet": "Preset for Lydløs",
@@ -265,6 +274,9 @@
               "watchdog_circulation_min": "The watchdog only acts after circulation has run this long.",
               "frost_limit_c": "Frost protection switches the heater on below this outdoor temperature and off above it.",
               "in_use_threshold_c": "Status is I brug when the setpoint is more than this above the rest temperature.",
+              "in_use_reminder_h": "Hours in I brug before a push asks whether the tub is still in use. 0 turns the reminder off.",
+              "in_use_repeat_h": "Hours after a \"still in use\" before the next question.",
+              "in_use_grace_min": "Minutes to answer the question; without an answer the spa goes back to the rest temperature.",
               "cleaning_max_min": "Backstop if the spa never stops the cleaning pump itself (it normally does after 15 min).",
               "cleaning_estimate_min": "Shown to dashboards as the expected cycle length.",
               "preset_quiet": "The heat pump's preset for the Lydløs mode.",
@@ -371,6 +383,9 @@
       },
       "reset_bath_water_timer": {
         "name": "Reset bath water timer"
+      },
+      "still_in_use": {
+        "name": "Still in use"
       }
     },
     "switch": {

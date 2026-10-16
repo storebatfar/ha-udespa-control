@@ -118,6 +118,9 @@ OPT_WATCHDOG_INTERVAL: Final = "watchdog_interval_min"
 OPT_WATCHDOG_CIRCULATION: Final = "watchdog_circulation_min"
 OPT_FROST_LIMIT: Final = "frost_limit_c"
 OPT_IN_USE_THRESHOLD: Final = "in_use_threshold_c"
+OPT_IN_USE_REMINDER: Final = "in_use_reminder_h"
+OPT_IN_USE_REPEAT: Final = "in_use_repeat_h"
+OPT_IN_USE_GRACE: Final = "in_use_grace_min"
 OPT_CLEANING_MAX: Final = "cleaning_max_min"
 OPT_CLEANING_ESTIMATE: Final = "cleaning_estimate_min"
 OPT_PRESET_QUIET: Final = "preset_quiet"
@@ -146,6 +149,9 @@ NUMBER_KEYS: Final = (
     OPT_WATCHDOG_CIRCULATION,
     OPT_FROST_LIMIT,
     OPT_IN_USE_THRESHOLD,
+    OPT_IN_USE_REMINDER,
+    OPT_IN_USE_REPEAT,
+    OPT_IN_USE_GRACE,
     OPT_CLEANING_MAX,
     OPT_CLEANING_ESTIMATE,
 )
@@ -174,6 +180,9 @@ DEFAULTS: Final[dict[str, Any]] = {
     OPT_WATCHDOG_CIRCULATION: 10,
     OPT_FROST_LIMIT: 5,
     OPT_IN_USE_THRESHOLD: 0.25,
+    OPT_IN_USE_REMINDER: 3,
+    OPT_IN_USE_REPEAT: 1,
+    OPT_IN_USE_GRACE: 30,
     OPT_CLEANING_MAX: 25,
     OPT_CLEANING_ESTIMATE: 30,
     OPT_PRESET_QUIET: "quick",
@@ -236,6 +245,10 @@ LEGACY_BATH_TIMER: Final = "input_datetime.udespa_badevand_timer"
 LEGACY_REST_TEMPERATURE: Final = "input_number.udespa_hviletemperatur"
 LEGACY_FROST_AUTOMATION: Final = "automation.udespa_taend_sluk_varmelegeme"
 DEFAULT_REST_TEMPERATURE: Final = 37.0
+# I brug reminder: the confirm button on the phone and the tag that lets the
+# "lowered" notification replace the question.
+IN_USE_CONFIRM_ACTION: Final = "UDESPA_STILL_IN_USE"
+IN_USE_NOTIFY_TAG: Final = "udespa_i_brug"
 
 SPA_CALLING: Final = frozenset({"heating", "idle"})
 

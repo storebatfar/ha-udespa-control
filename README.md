@@ -54,6 +54,11 @@ temperature calibration must be 0; 2.5 made it overshoot. There is no safety sto
 spa's reading: while the heat pump runs, the spa's sensor sees the warm water coming back
 from it (39 °C on a cold night while the heat pump's inlet read 36.5), not the tub.
 
+**I brug reminder.** After 3 hours in I brug a push asks whether the tub is still in use,
+with a *Ja, stadig i brug* button (also the *Stadig i brug* button entity). A confirmation asks
+again an hour later; no answer within 30 minutes sets the spa back to the rest temperature.
+All three times are under Configure → Tal (0 hours turns the reminder off).
+
 ## The rules
 
 Every rule is a pure function in `custom_components/udespa_control/rules.py`, documented
