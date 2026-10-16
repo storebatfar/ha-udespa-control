@@ -447,3 +447,154 @@ async def test_switching_on_tells_the_mode_keeper(
     assert calls == [1, 1]
     await advance(hass, freezer, 31)  # re-sends of "heat" don't count as a new switch-on
     assert calls == [1, 1]
+
+
+# --- 2026.10.11: restart a stuck heat pump before the backup -----------------
+# Timeline with the defaults: retries end at 240 s, "off", 600 s rest, "heat" at
+# ~840 s, up to 180 s for the compressor, then the backup (heater check 150 s).
+
+
+def _stuck(tub: FakeTub, refusals: int) -> None:
+    """Water circulates, the spa is cold, and the heat pump ignores `refusals` starts."""
+    tub.model_compressor = True
+    tub.refuse_starts = refusals
+    tub.circulation(True)
+    tub.spa(temperature=35.0, setpoint=37.0)
+
+
+def _in_heat_at_standby(hass: HomeAssistant, tub: FakeTub) -> None:
+    hass.states.async_set(HP, "heat", dict(hass.states.get(HP).attributes))
+    tub.hp_power(8)
+
+
+async def test_a_stuck_heat_pump_is_restarted_before_the_backup(
+    hass: HomeAssistant, freezer: FrozenDateTimeFactory, tub: FakeTub, harness
+):
+    _stuck(tub, 1)
+    h = harness()
+    h.hp.start(ON)
+    await advance(hass, freezer, 245, step=5)
+    assert tub.hp_modes() == ["heat", "off"]  # the retry window ran out: restart
+    await advance(hass, freezer, 590, step=5)
+    assert tub.hp_modes() == ["heat", "off"]  # still resting
+    await advance(hass, freezer, 10, step=5)
+    assert tub.hp_modes() == ["heat", "off", "heat"]
+    await advance(hass, freezer, 600, step=5)  # well past where a backup would be
+    assert tub.heater_commands() == []
+    assert tub.notifications() == []
+    assert h.failure is False
+    assert "Genstart: varmepumpen kører igen" in h.journal
+
+
+async def test_a_heat_pump_that_stays_dead_still_gets_the_backup(
+    hass: HomeAssistant, freezer: FrozenDateTimeFactory, tub: FakeTub, harness
+):
+    _stuck(tub, 5)
+    h = harness()
+    h.hp.start(ON)
+    await advance(hass, freezer, 1300, step=5)
+    assert tub.hp_modes() == ["heat", "off", "heat"]
+    assert tub.heater_commands() == ["on"]
+    assert len(tub.notifications()) == 1
+    assert h.failure is True
+    assert "Genstart: varmepumpen kører igen" not in h.journal
+
+
+async def test_the_restart_stands_down_when_circulation_stops_during_the_rest(
+    hass: HomeAssistant, freezer: FrozenDateTimeFactory, tub: FakeTub, harness
+):
+    _stuck(tub, 1)
+    _in_heat_at_standby(hass, tub)
+    h = harness()
+    h.hp.start_watchdog_backup("varmepumpen trækker ikke strøm")
+    await advance(hass, freezer, 60, step=5)
+    tub.circulation(False)
+    await advance(hass, freezer, 1200, step=5)
+    assert tub.hp_modes() == ["off"]  # no "heat" without water flow
+    assert tub.heater_commands() == []
+    assert tub.notifications() == []
+    assert h.failure is False
+
+
+async def test_no_backup_when_circulation_stops_during_the_check(
+    hass: HomeAssistant, freezer: FrozenDateTimeFactory, tub: FakeTub, harness
+):
+    _stuck(tub, 5)
+    _in_heat_at_standby(hass, tub)
+    h = harness()
+    h.hp.start_watchdog_backup("varmepumpen trækker ikke strøm")
+    await advance(hass, freezer, 660, step=5)  # rest over, "heat" sent, checking
+    assert tub.hp_modes() == ["off", "heat"]
+    tub.circulation(False)
+    await advance(hass, freezer, 600, step=5)
+    assert tub.heater_commands() == []
+    assert tub.notifications() == []
+    assert h.failure is False
+
+
+async def test_a_new_decision_during_the_rest_wins_over_the_watchdog(
+    hass: HomeAssistant, freezer: FrozenDateTimeFactory, tub: FakeTub, harness
+):
+    """The owner lowers the setpoint mid-restart: the OFF decision must stand."""
+    _stuck(tub, 1)
+    _in_heat_at_standby(hass, tub)
+    h = harness()
+    h.hp.start_watchdog_backup("varmepumpen trækker ikke strøm")
+    await advance(hass, freezer, 120, step=5)
+    h.hp.start(OFF)
+    await advance(hass, freezer, 1200, step=5)
+    assert "heat" not in tub.hp_modes()
+    assert tub.heater_commands() == []
+    assert h.failure is False
+
+
+async def test_a_heat_pump_switched_off_by_hand_is_not_switched_on(
+    hass: HomeAssistant, freezer: FrozenDateTimeFactory, tub: FakeTub, harness
+):
+    _stuck(tub, 0)  # its entity shows "off"
+    h = harness()
+    h.hp.start_watchdog_backup("varmepumpen trækker ikke strøm")
+    await advance(hass, freezer, 300, step=5)
+    assert "heat" not in tub.hp_modes()
+    assert tub.heater_commands() == ["on"]  # today's behaviour: backup and alert
+
+
+async def test_a_gently_running_heat_pump_is_not_restarted(
+    hass: HomeAssistant, freezer: FrozenDateTimeFactory, tub: FakeTub, harness
+):
+    """450 W is below the 500 W "running" line but well above standby."""
+    _stuck(tub, 0)
+    hass.states.async_set(HP, "heat", dict(hass.states.get(HP).attributes))
+    tub.hp_power(450)
+    h = harness()
+    h.hp.start_watchdog_backup("varmepumpen trækker ikke strøm")
+    await advance(hass, freezer, 300, step=5)
+    assert "off" not in tub.hp_modes()
+
+
+async def test_the_restart_is_not_a_running_backup(
+    hass: HomeAssistant, freezer: FrozenDateTimeFactory, tub: FakeTub, harness
+):
+    """backup_running keeps a frost-on heater on; it must not cover the restart."""
+    _stuck(tub, 1)
+    _in_heat_at_standby(hass, tub)
+    h = harness()
+    h.hp.start_watchdog_backup("varmepumpen trækker ikke strøm")
+    await advance(hass, freezer, 120, step=5)
+    assert not h.hp.backup_running
+
+
+async def test_the_watchdog_restarts_a_stuck_heat_pump_too(
+    hass: HomeAssistant, freezer: FrozenDateTimeFactory, tub: FakeTub, harness
+):
+    """2026-10-15 16:56: in heat, not running, cold spa -> restart, not a fault."""
+    _stuck(tub, 0)  # already sitting in heat without running; a fresh start works
+    _in_heat_at_standby(hass, tub)
+    h = harness()
+    h.hp.start_watchdog_backup("varmepumpen trækker ikke strøm")
+    await advance(hass, freezer, 1000, step=5)
+    assert tub.hp_modes() == ["off", "heat"]
+    assert tub.heater_commands() == []
+    assert tub.notifications() == []
+    assert h.failure is False
+    assert "Genstart: varmepumpen kører igen" in h.journal

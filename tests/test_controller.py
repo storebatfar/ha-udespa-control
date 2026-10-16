@@ -80,9 +80,10 @@ async def test_a_trigger_without_a_decision_does_not_cancel_the_job(
     tub.spa(temperature=35.5)
     hass.states.async_set(FILTER_2, "unavailable")
     tub.spa(action="idle")
-    await advance(hass, freezer, 370, step=5)
-    assert tub.hp_modes() == ["heat"]
-    assert tub.heater_commands() == ["on"]  # the job lived on to its backup
+    await advance(hass, freezer, 1150, step=5)
+    # The job lived on through its restart attempt to its backup.
+    assert tub.hp_modes() == ["heat", "off", "heat"]
+    assert tub.heater_commands() == ["on"]
 
 
 async def test_satisfied_switches_off_after_the_off_delay(
@@ -223,6 +224,8 @@ async def test_watchdog_fires_after_ten_minutes_of_cold_silent_circulation(
     await advance(hass, freezer, 595, step=5)
     assert tub.heater_commands() == []
     await advance(hass, freezer, 5)
+    # The heat pump is "off" here, not stuck in heat: no restart, backup at once.
+    assert tub.hp_modes() == []
     assert tub.heater_commands() == ["on"]
     await advance(hass, freezer, 150, step=5)
     assert len(tub.notifications()) == 1
@@ -484,8 +487,8 @@ async def test_frost_crossing_during_the_backup_check_keeps_the_heater_on(
     await make_controller()
     tub.spa(temperature=35.0)
     tub.circulation(True)
-    await advance(hass, freezer, 600, step=10)
-    assert tub.heater_commands() == ["on"]  # the watchdog's backup
+    await advance(hass, freezer, 960, step=10)
+    assert tub.heater_commands() == ["on"]  # the watchdog's backup, after its restart
     tub.outdoor(4.0)
     await settle(hass)
     tub.outdoor(6.0)
@@ -835,3 +838,26 @@ async def test_a_hot_spa_reading_in_a_filter_cycle_never_stops_the_heat_pump(
         await advance(hass, freezer, 30, step=10)
     assert "off" not in tub.hp_modes()
     assert tub.notifications() == []
+
+
+# --- 2026.10.11: a stuck heat pump is restarted, not reported ----------------
+
+
+async def test_a_heat_call_that_meets_a_stuck_heat_pump_restarts_it(
+    hass: HomeAssistant, freezer: FrozenDateTimeFactory, tub: FakeTub, make_controller
+):
+    """2026-10-15: "heat" right after an "off" left it in standby; no fault, no heater."""
+    tub.model_compressor = True
+    tub.refuse_starts = 1
+    controller = await make_controller()
+    tub.spa(temperature=35.0, setpoint=37.0)
+    tub.circulation(True)
+    await settle(hass)
+    tub.spa(action="heating")
+    await advance(hass, freezer, 1300, step=10)
+    assert tub.hp_modes() == ["heat", "off", "heat"]
+    assert tub.heater_commands() == []
+    assert tub.notifications() == []
+    assert not controller.failure_open
+    assert controller.status is not Status.FAULT
+    assert any("Genstart: varmepumpen kører igen" in line for line in controller.recent)

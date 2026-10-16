@@ -22,6 +22,8 @@ from .const import (
     DOMAIN,
     HEAD_START_OFF_ATTEMPTS,
     HEAD_START_OFF_SETTLE_S,
+    RESTART_REST_S,
+    RESTART_VERIFY_S,
     SPA_CALLING,
     VERIFY_POLL_S,
     BackupKind,
@@ -66,6 +68,8 @@ class HeatPump:
         self._set_failure = set_failure
         self._on_switched_on = on_switched_on
         self._job: asyncio.Task[None] | None = None
+        # Bumped by every decision, so a restart that waits can tell it is stale.
+        self._generation = 0
         self.last_action: HeatAction | None = None
         self._watchdog: asyncio.Task[None] | None = None
         self._backups = 0
@@ -89,6 +93,7 @@ class HeatPump:
         if self._job is not None:
             self._job.cancel()
         self.last_action = decision.action
+        self._generation += 1
         job = {
             HeatAction.ON: self._async_on,
             HeatAction.OFF: self._async_off,
@@ -198,12 +203,73 @@ class HeatPump:
     # --- shared actions -----------------------------------------------------
 
     async def async_backup(self, kind: BackupKind) -> None:
-        """A5 action: heater on, check it after a while, alert once, mark failure."""
+        """A5 action: restart first; then heater on, check, alert once, mark failure."""
+        restarted = await self._async_restart()
+        if restarted is True:
+            return
+        if restarted is False and not self._backup_still_needed():
+            return
         self._backups += 1
         try:
             await self._async_backup(kind)
         finally:
             self._backups -= 1
+
+    async def _async_restart(self) -> bool | None:
+        """Off, rest, heat again before calling it a fault.
+
+        True: no backup needed (it runs again, or a newer decision or a stopped
+        circulation took over). False: it still won't start. None: skipped, so
+        the backup decides as before: no circulation, the heat pump not in heat
+        (switched off by hand), or not at standby power (it may be running
+        gently below the "running" line).
+        """
+        generation = self._generation
+        power = self._reader.hp_power()
+        if (
+            not self._reader.circulation_on()
+            or self._reader.hp_hvac_mode() != "heat"
+            or power is None
+            or power >= self._s.hp_off_w
+        ):
+            return None
+        self._record("Varmepumpe genstartes: står i heat uden at starte")
+        await self._actuators.heat_pump_mode("off", "genstart: varmepumpen starter ikke")
+        await async_sleep(self._hass, RESTART_REST_S)
+        if self._generation != generation:
+            self._record("Genstart afbrudt: en ny beslutning har overtaget")
+            return True
+        if not self._reader.circulation_on():
+            self._record("Genstart afbrudt: cirkulationen er stoppet")
+            return True
+        await self._actuators.heat_pump_mode(
+            "heat", f"genstart: tændt igen efter {fmt_num(RESTART_REST_S / 60)} min hvile"
+        )
+        self._switched_on()
+        polls = RESTART_VERIFY_S // VERIFY_POLL_S
+        for poll in range(polls + 1):
+            if self._generation != generation:
+                self._record("Genstart afbrudt: en ny beslutning har overtaget")
+                return True
+            if self._running():
+                self._record("Genstart: varmepumpen kører igen")
+                await self.async_recover()
+                return True
+            if poll < polls:
+                await async_sleep(self._hass, VERIFY_POLL_S)
+        return False
+
+    def _backup_still_needed(self) -> bool:
+        """After a failed restart: only back up if water still flows and is cold."""
+        if not self._reader.circulation_on():
+            self._record("Backup sprunget over: cirkulationen er stoppet")
+            return False
+        if not backup_needed(
+            self._reader.spa_temperature(), self._reader.setpoint(), self._s.backup_margin
+        ):
+            self._record("Backup sprunget over: vandet er ikke længere under setpunkt")
+            return False
+        return True
 
     async def _async_backup(self, kind: BackupKind) -> None:
         if self._s.backup_heater:
